@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DANFE Processor</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <main class="caixa">
+
+        <section class="topo">
+            <h1>DANFE Processor</h1>
+            <p>Sistema para identificar automaticamente a loja em arquivos DANFE.</p>
+        </section>
+
+        <section class="card">
+            <h2>Enviar PDF</h2>
+            <p class="texto">
+                Selecione um arquivo PDF com uma ou várias NF-e. O sistema irá analisar cada página e inserir o número da loja.
+            </p>
+
+            <form action="/upload/" method="post" enctype="multipart/form-data">
+                <label class="area-upload">
+                    <span>Escolha o arquivo PDF</span>
+                    <input type="file" name="file" accept=".pdf" required>
+                </label>
+
+                <button type="submit">Processar DANFE</button>
+            </form>
+        </section>
+
+        <section class="info">
+            <div>
+                <h3>Como funciona?</h3>
+                <p>O sistema lê o endereço da NF-e, compara com a lista de lojas cadastradas e escreve o número correto no PDF.</p>
+            </div>
+
+            <div>
+                <h3>Projeto</h3>
+                <p>Desenvolvido para praticar Python, FastAPI, HTML e CSS.</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>© 2026 - Projeto feito por Thiago Paiva</p>
+        </footer>
+
+    </main>
+
+</body>
+</html>
