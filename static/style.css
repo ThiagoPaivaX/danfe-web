@@ -1,3 +1,14 @@
+/*
+    style.css
+    Feito por Thiago Paiva
+
+    aprendi que da pra mudar o tema inteiro do site usando o atributo
+    data-setor no body. cada setor tem suas proprias cores la no final do arquivo.
+    isso evita ter um css separado pra cada setor
+*/
+
+
+/* zera as margens e padding de tudo, padrao que todo mundo usa */
 * {
     margin: 0;
     padding: 0;
@@ -11,6 +22,131 @@ body {
     min-height: 100vh;
 }
 
+
+/* --------------------------------------------------------------
+   LOGIN
+   -------------------------------------------------------------- */
+
+/* centraliza o card de login na tela */
+.login-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-caixa {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 45px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 0 40px rgba(220, 38, 38, 0.15);
+}
+
+.login-topo {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-icone {
+    font-size: 48px;
+    margin-bottom: 14px;
+}
+
+.login-topo h1 {
+    font-size: 26px;
+    margin-bottom: 6px;
+}
+
+.login-topo p {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* caixa vermelha de erro que aparece quando a senha esta errada */
+.alerta-erro {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #fca5a5;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.campo label {
+    display: block;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+}
+
+/* estilo do select e do input de senha */
+.campo select,
+.campo input[type="password"] {
+    width: 100%;
+    background: #1f2937;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 14px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border 0.2s;
+    appearance: none;
+}
+
+.campo select:focus,
+.campo input[type="password"]:focus {
+    border-color: #dc2626;
+}
+
+/* fundo dos options do select */
+.campo select option {
+    background: #1f2937;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 13px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-login:hover {
+    background: #ef4444;
+    transform: scale(1.02);
+}
+
+.login-footer {
+    text-align: center;
+    color: #475569;
+    font-size: 12px;
+    margin-top: 28px;
+}
+
+
+/* --------------------------------------------------------------
+   LAYOUT GERAL
+   -------------------------------------------------------------- */
+
+/* limita a largura do conteudo e centraliza */
 .caixa {
     width: 90%;
     max-width: 900px;
@@ -18,21 +154,81 @@ body {
     padding: 40px 0;
 }
 
+
+/* --------------------------------------------------------------
+   TOPO DA PAGINA DO SETOR
+   -------------------------------------------------------------- */
+
 .topo {
     text-align: center;
     margin-bottom: 30px;
 }
 
-.topo h1 {
-    font-size: 42px;
-    color: #ffffff;
+.setor-icone {
+    font-size: 52px;
     margin-bottom: 10px;
 }
 
-.topo p {
-    color: #cbd5e1;
-    font-size: 17px;
+.topo h1 {
+    font-size: 38px;
+    margin-bottom: 8px;
 }
+
+.setor-desc {
+    color: #94a3b8;
+    font-size: 15px;
+    margin-bottom: 16px;
+}
+
+/* botoes de tutorial e sair ficam lado a lado */
+.topo-acoes {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-tutorial {
+    padding: 9px 20px;
+    background: transparent;
+    color: #fca5a5;
+    border: 1px solid #ef4444;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    width: auto;
+}
+
+.btn-tutorial:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.02);
+}
+
+/* o btn-sair é um link mas deixei parecido com botao */
+.btn-sair {
+    padding: 9px 20px;
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.btn-sair:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+
+/* --------------------------------------------------------------
+   CARDS
+   -------------------------------------------------------------- */
 
 .card {
     background: #111827;
@@ -44,15 +240,21 @@ body {
 }
 
 .card h2 {
-    font-size: 26px;
+    font-size: 22px;
     margin-bottom: 10px;
 }
 
 .texto {
     color: #cbd5e1;
     margin-bottom: 25px;
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 14px;
 }
+
+
+/* --------------------------------------------------------------
+   UPLOAD
+   -------------------------------------------------------------- */
 
 .area-upload {
     display: block;
@@ -63,19 +265,27 @@ body {
     text-align: center;
     cursor: pointer;
     margin-bottom: 20px;
+    transition: background 0.2s;
+}
+
+.area-upload:hover {
+    background: #263548;
 }
 
 .area-upload span {
     color: #fca5a5;
     font-weight: bold;
+    font-size: 15px;
 }
 
 .area-upload input {
     display: block;
     margin: 15px auto 0;
-    color: white;
+    color: #94a3b8;
+    font-size: 13px;
 }
 
+/* esse button é generico, serve pra todos os botoes da pagina */
 button {
     width: 100%;
     padding: 15px;
@@ -94,6 +304,11 @@ button:hover {
     transform: scale(1.02);
 }
 
+
+/* --------------------------------------------------------------
+   CARDS DE INFO DO RODAPE
+   -------------------------------------------------------------- */
+
 .info {
     display: flex;
     gap: 20px;
@@ -111,34 +326,403 @@ button:hover {
 .info h3 {
     margin-bottom: 10px;
     color: #f87171;
+    font-size: 15px;
 }
 
 .info p {
     color: #cbd5e1;
     line-height: 1.5;
+    font-size: 13px;
 }
 
 footer {
     text-align: center;
     color: #94a3b8;
-    font-size: 14px;
+    font-size: 13px;
+    padding-bottom: 20px;
 }
 
-/* Responsivo para celular */
+
+/* --------------------------------------------------------------
+   CONFIGURACAO DE ROTA
+   -------------------------------------------------------------- */
+
+.rota-secao {
+    margin-bottom: 22px;
+}
+
+.rota-secao h3 {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.rota-dica {
+    font-size: 11px;
+    color: #475569;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* os chipzinhos das lojas disponiveis */
+.lojas-disponiveis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.loja-chip {
+    background: #1f2937;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    color: #cbd5e1;
+    user-select: none;
+}
+
+.loja-chip:hover {
+    background: #2d3f55;
+    color: white;
+    transform: scale(1.05);
+}
+
+/* a caixa da lista de rota */
+.rota-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 60px;
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rota-vazia {
+    color: #475569;
+    font-size: 13px;
+    text-align: center;
+    padding: 16px;
+}
+
+/* cada item dentro da lista de rota */
+.rota-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #1f2937;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: grab;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.rota-item:hover {
+    background: #2d3f55;
+}
+
+/* esse icone de arrastar */
+.rota-handle {
+    color: #475569;
+    font-size: 18px;
+    cursor: grab;
+}
+
+.rota-num {
+    flex: 1;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* botao de remover loja da rota */
+.rota-remover {
+    width: auto;
+    padding: 3px 9px;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.rota-remover:hover {
+    background: #dc2626;
+    color: white;
+    transform: scale(1.05);
+}
+
+/* botao de salvar rota fica roxo pra diferenciar dos outros */
+.btn-salvar-rota {
+    background: #4f46e5;
+    margin-top: 6px;
+}
+
+.btn-salvar-rota:hover {
+    background: #6366f1;
+}
+
+.rota-feedback {
+    margin-top: 12px;
+    font-size: 13px;
+    min-height: 20px;
+    text-align: center;
+}
+
+.feedback-ok   { color: #34d399; }
+.feedback-erro { color: #f87171; }
+
+
+/* --------------------------------------------------------------
+   MODAL DO TUTORIAL
+   -------------------------------------------------------------- */
+
+/* cobre a tela inteira com um fundo escuro */
+/* começa com display none, o js coloca a classe visivel pra mostrar */
+.fundo-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+}
+
+.fundo-modal.visivel {
+    display: flex;
+}
+
+.modal {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    width: 90%;
+    max-width: 580px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.2);
+}
+
+.modal-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-topo h2 {
+    font-size: 18px;
+}
+
+.btn-fechar {
+    width: auto;
+    padding: 4px 10px;
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-fechar:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.05);
+}
+
+.modal-corpo {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* cada passo do tutorial */
+.passo {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+/* circulo com o numero do passo */
+.passo-numero {
+    background: #dc2626;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.passo-texto h3 {
+    font-size: 14px;
+    color: #f87171;
+    margin-bottom: 4px;
+}
+
+.passo-texto p {
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.6;
+}
+
+/* caixinha de aviso amarela */
+.aviso {
+    display: flex;
+    gap: 12px;
+    background: rgba(234, 179, 8, 0.08);
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.aviso span { font-size: 18px; flex-shrink: 0; }
+
+.aviso p {
+    font-size: 13px;
+    color: #fde68a;
+    line-height: 1.5;
+}
+
+.modal-rodape {
+    padding: 18px 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-ok {
+    width: 100%;
+    padding: 12px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-ok:hover {
+    background: #ef4444;
+    transform: scale(1.02);
+}
+
+
+/* --------------------------------------------------------------
+   TEMAS POR SETOR
+   o data-setor no body ativa o tema certo pra cada setor
+   assim nao precisa de um css separado pra cada um
+   -------------------------------------------------------------- */
+
+/* producao centralizada - azul */
+[data-setor="producao"] body              { background: linear-gradient(135deg, #0a1628, #0f2040); }
+[data-setor="producao"] .card             { box-shadow: 0 0 25px rgba(59, 130, 246, 0.18); border-color: rgba(59, 130, 246, 0.15); }
+[data-setor="producao"] .area-upload      { border-color: #3b82f6; }
+[data-setor="producao"] .area-upload span { color: #93c5fd; }
+[data-setor="producao"] button            { background: #2563eb; }
+[data-setor="producao"] button:hover      { background: #3b82f6; }
+[data-setor="producao"] .info h3          { color: #93c5fd; }
+[data-setor="producao"] .btn-tutorial     { color: #93c5fd; border-color: #3b82f6; }
+[data-setor="producao"] .btn-tutorial:hover { background: #3b82f6; color: white; }
+[data-setor="producao"] .passo-numero     { background: #2563eb; }
+[data-setor="producao"] .passo-texto h3   { color: #93c5fd; }
+[data-setor="producao"] .btn-ok           { background: #2563eb; }
+[data-setor="producao"] .btn-ok:hover     { background: #3b82f6; }
+
+/* mercearia - dourado */
+[data-setor="mercearia"] body              { background: linear-gradient(135deg, #1a0f00, #2d1a00); }
+[data-setor="mercearia"] .card             { box-shadow: 0 0 25px rgba(234, 179, 8, 0.18); border-color: rgba(234, 179, 8, 0.15); }
+[data-setor="mercearia"] .area-upload      { border-color: #ca8a04; }
+[data-setor="mercearia"] .area-upload span { color: #fde68a; }
+[data-setor="mercearia"] button            { background: #b45309; }
+[data-setor="mercearia"] button:hover      { background: #d97706; }
+[data-setor="mercearia"] .info h3          { color: #fde68a; }
+[data-setor="mercearia"] .btn-tutorial     { color: #fde68a; border-color: #ca8a04; }
+[data-setor="mercearia"] .btn-tutorial:hover { background: #ca8a04; color: white; }
+[data-setor="mercearia"] .passo-numero     { background: #b45309; }
+[data-setor="mercearia"] .passo-texto h3   { color: #fde68a; }
+[data-setor="mercearia"] .btn-ok           { background: #b45309; }
+[data-setor="mercearia"] .btn-ok:hover     { background: #d97706; }
+[data-setor="mercearia"] .btn-salvar-rota  { background: #b45309; }
+[data-setor="mercearia"] .btn-salvar-rota:hover { background: #d97706; }
+[data-setor="mercearia"] .loja-chip:hover  { border-color: #ca8a04; }
+
+/* pereciveis - azul gelo */
+[data-setor="pereciveis"] body              { background: linear-gradient(135deg, #001a1f, #002d38); }
+[data-setor="pereciveis"] .card             { box-shadow: 0 0 25px rgba(6, 182, 212, 0.18); border-color: rgba(6, 182, 212, 0.15); }
+[data-setor="pereciveis"] .area-upload      { border-color: #0891b2; }
+[data-setor="pereciveis"] .area-upload span { color: #a5f3fc; }
+[data-setor="pereciveis"] button            { background: #0e7490; }
+[data-setor="pereciveis"] button:hover      { background: #0891b2; }
+[data-setor="pereciveis"] .info h3          { color: #a5f3fc; }
+[data-setor="pereciveis"] .btn-tutorial     { color: #a5f3fc; border-color: #0891b2; }
+[data-setor="pereciveis"] .btn-tutorial:hover { background: #0891b2; color: white; }
+[data-setor="pereciveis"] .passo-numero     { background: #0e7490; }
+[data-setor="pereciveis"] .passo-texto h3   { color: #a5f3fc; }
+[data-setor="pereciveis"] .btn-ok           { background: #0e7490; }
+[data-setor="pereciveis"] .btn-ok:hover     { background: #0891b2; }
+[data-setor="pereciveis"] .btn-salvar-rota  { background: #0e7490; }
+[data-setor="pereciveis"] .btn-salvar-rota:hover { background: #0891b2; }
+[data-setor="pereciveis"] .loja-chip:hover  { border-color: #0891b2; }
+
+/* flv - verde */
+[data-setor="flv"] body              { background: linear-gradient(135deg, #001a0a, #002d12); }
+[data-setor="flv"] .card             { box-shadow: 0 0 25px rgba(34, 197, 94, 0.18); border-color: rgba(34, 197, 94, 0.15); }
+[data-setor="flv"] .area-upload      { border-color: #16a34a; }
+[data-setor="flv"] .area-upload span { color: #bbf7d0; }
+[data-setor="flv"] button            { background: #15803d; }
+[data-setor="flv"] button:hover      { background: #16a34a; }
+[data-setor="flv"] .info h3          { color: #bbf7d0; }
+[data-setor="flv"] .btn-tutorial     { color: #bbf7d0; border-color: #16a34a; }
+[data-setor="flv"] .btn-tutorial:hover { background: #16a34a; color: white; }
+[data-setor="flv"] .passo-numero     { background: #15803d; }
+[data-setor="flv"] .passo-texto h3   { color: #bbf7d0; }
+[data-setor="flv"] .btn-ok           { background: #15803d; }
+[data-setor="flv"] .btn-ok:hover     { background: #16a34a; }
+[data-setor="flv"] .btn-salvar-rota  { background: #15803d; }
+[data-setor="flv"] .btn-salvar-rota:hover { background: #16a34a; }
+[data-setor="flv"] .loja-chip:hover  { border-color: #16a34a; }
+
+
+/* --------------------------------------------------------------
+   RESPONSIVO - celular
+   -------------------------------------------------------------- */
+
 @media (max-width: 700px) {
-    .topo h1 {
-        font-size: 32px;
-    }
 
-    .info {
-        flex-direction: column;
-    }
+    .topo h1 { font-size: 28px; }
 
-    .info div {
-        width: 100%;
-    }
+    /* empilha os cards de info no celular */
+    .info { flex-direction: column; }
+    .info div { width: 100%; }
 
-    .card {
-        padding: 25px;
-    }
+    .card { padding: 22px; }
+
+    /* empilha os botoes do topo */
+    .topo-acoes { flex-direction: column; }
+    .btn-tutorial, .btn-sair { width: 100%; text-align: center; }
+
+    .modal-topo h2 { font-size: 15px; }
+    .loja-chip { font-size: 12px; padding: 5px 10px; }
 }

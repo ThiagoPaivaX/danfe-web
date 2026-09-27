@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DANFE Processor - Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+
+    <div class="login-caixa">
+
+        <!-- titulo e icone do topo -->
+        <div class="login-topo">
+            <div class="login-icone">📄</div>
+            <h1>DANFE Processor</h1>
+            <p>Selecione seu setor e entre com a senha</p>
+        </div>
+
+        <!-- esse bloco so aparece se o python mandar um erro de login -->
+        {% if erro %}
+        <div class="alerta-erro">
+            ⚠ {{ erro }}
+        </div>
+        {% endif %}
+
+        <!-- formulario de login -->
+        <!-- o action="/login" manda os dados pro servidor quando clicar em entrar -->
+        <form action="/login" method="post" class="login-form">
+
+            <div class="campo">
+                <label for="usuario">Setor</label>
+                <select name="usuario" id="usuario" required>
+                    <option value="" disabled selected>Selecione seu setor...</option>
+                    <option value="producao">Produção Centralizada</option>
+                    <option value="mercearia">Mercearia</option>
+                    <option value="pereciveis">Perecíveis</option>
+                    <option value="flv">FLV</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label for="senha">Senha</label>
+                <input
+                    type="password"
+                    name="senha"
+                    id="senha"
+                    placeholder="Digite sua senha"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn-login">Entrar</button>
+
+        </form>
+
+        <footer class="login-footer">
+            © 2026 - Projeto feito por Thiago Paiva
+        </footer>
+
+    </div>
+
+</body>
+</html>
