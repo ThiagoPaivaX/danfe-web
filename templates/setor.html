@@ -28,6 +28,12 @@
                 <button class="btn-tutorial" onclick="abrirTutorial()">
                     📖 Como usar?
                 </button>
+                {% if setor == "producao" %}
+                <!-- botao da ferramenta de etiquetas de validade, só aparece pra producao -->
+                <a href="/setor/producao/validade" class="btn-tutorial">
+                    🏷️ Etiquetas de Validade
+                </a>
+                {% endif %}
                 <!-- esse link volta pra pagina de login -->
                 <a href="/" class="btn-sair">Sair</a>
             </div>

@@ -332,6 +332,23 @@ async def pagina_setor(request: Request, setor: str):
     )
 
 
+# pagina de etiquetas de validade - so existe pra producao centralizada
+# os outros setores recebem 404 igual quando tentam acessar um setor que nao existe
+@app.get("/setor/{setor}/validade")
+async def pagina_validade(request: Request, setor: str):
+    if setor != "producao":
+        raise HTTPException(status_code=404, detail="Página não encontrada.")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="validade.html",
+        context={
+            "setor":      setor,
+            "nome_setor": NOMES_SETORES[setor],
+        }
+    )
+
+
 # recebe o pdf, processa e devolve editado pra baixar
 @app.post("/upload/{setor}")
 async def upload_pdf(setor: str, file: UploadFile = File(...)):

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etiquetas de Validade - {{ nome_setor }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+
+<!-- mesmo data-setor do setor.html, então usa o tema (cores) da produção normalmente -->
+<body data-setor="{{ setor }}">
+
+    <main class="caixa">
+
+        <section class="topo">
+            <div class="setor-icone">🏷️</div>
+            <h1>Etiquetas de Validade</h1>
+            <p class="setor-desc">Carimba a data de validade nas etiquetas do SAP antes de imprimir na Zebra.</p>
+
+            <div class="topo-acoes">
+                <a href="/setor/{{ setor }}" class="btn-tutorial">⬅ Voltar</a>
+                <a href="/" class="btn-sair">Sair</a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>1. PDF da etiqueta (SAP)</h2>
+            <p class="texto">Esse arquivo não sai do seu navegador — nada é enviado pro servidor.</p>
+            <label class="area-upload">
+                <span id="fileLabel">Escolha o arquivo PDF</span>
+                <input type="file" id="fileInput" accept="application/pdf">
+            </label>
+        </section>
+
+        <section class="card" id="previewCard" style="display:none;">
+            <h2>2. Clique onde a validade deve aparecer</h2>
+            <p class="texto">A posição marcada é aplicada em todas as páginas do PDF.</p>
+            <div style="overflow-x:auto; border:1px dashed rgba(255,255,255,0.2); border-radius:10px; padding:8px;">
+                <canvas id="pdfCanvas" style="display:block; max-width:100%; height:auto; cursor:crosshair;"></canvas>
+            </div>
+        </section>
+
+        <section class="card" id="settingsCard" style="display:none;">
+            <h2>3. Dados da validade</h2>
+            <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; margin-top:10px;">
+                <div class="campo" style="flex:1; min-width:150px;">
+                    <label for="dateInput">Data de validade</label>
+                    <input type="date" id="dateInput">
+                </div>
+                <div class="campo" style="flex:1; min-width:150px;">
+                    <label for="prefixInput">Texto antes da data</label>
+                    <input type="text" id="prefixInput" value="VAL:">
+                </div>
+                <div class="campo" style="max-width:110px;">
+                    <label for="sizeInput">Fonte (pt)</label>
+                    <input type="number" id="sizeInput" value="9" min="4" max="40" step="1">
+                </div>
+                <div class="campo" style="max-width:110px;">
+                    <label for="boldInput">Negrito</label>
+                    <input type="checkbox" id="boldInput" checked style="width:20px; height:20px;">
+                </div>
+            </div>
+
+            <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
+                <button id="genBtn" disabled>Gerar PDF com validade</button>
+                <button id="resetBtn" type="button" style="background:#374151;">Trocar arquivo</button>
+            </div>
+            <div id="status" style="margin-top:10px; font-size:14px;"></div>
+        </section>
+
+        <footer>
+            <p>© 2026 - Projeto feito por Thiago Paiva</p>
+        </footer>
+
+    </main>
+
+    <script>
+    (function(){
+        const { PDFDocument, StandardFonts, rgb } = PDFLib;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const previewCard = document.getElementById('previewCard');
+        const settingsCard = document.getElementById('settingsCard');
+        const canvas = document.getElementById('pdfCanvas');
+        const ctx = canvas.getContext('2d');
+        const dateInput = document.getElementById('dateInput');
+        const prefixInput = document.getElementById('prefixInput');
+        const sizeInput = document.getElementById('sizeInput');
+        const boldInput = document.getElementById('boldInput');
+        const genBtn = document.getElementById('genBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusEl = document.getElementById('status');
+
+        let originalBytes = null, fileName = 'etiqueta';
+        let pageWidthPt = 0, pageHeightPt = 0, scalePxToPt = 1;
+        let markerXpt = null, markerYpt = null;
+
+        dateInput.value = new Date().toISOString().slice(0,10);
+
+        try {
+            const s = JSON.parse(localStorage.getItem('etiquetaValidadeSettingsProducao') || '{}');
+            if (s.prefix) prefixInput.value = s.prefix;
+            if (s.size) sizeInput.value = s.size;
+            if (typeof s.bold === 'boolean') boldInput.checked = s.bold;
+        } catch(e) {}
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            fileName = file.name.replace(/\.pdf$/i, '');
+            fileLabel.textContent = file.name;
+            originalBytes = new Uint8Array(await file.arrayBuffer());
+            await renderPreview(originalBytes.slice());
+            previewCard.style.display = 'block';
+            settingsCard.style.display = 'block';
+            markerXpt = markerYpt = null;
+            genBtn.disabled = true;
+            statusEl.textContent = '';
+        });
+
+        async function renderPreview(bytesCopy) {
+            const pdf = await pdfjsLib.getDocument({ data: bytesCopy }).promise;
+            const page = await pdf.getPage(1);
+            const v1 = page.getViewport({ scale: 1 });
+            pageWidthPt = v1.width;
+            pageHeightPt = v1.height;
+
+            const targetCssWidth = Math.min(500, pageWidthPt * 2);
+            const renderScale = targetCssWidth / pageWidthPt;
+            const viewport = page.getViewport({ scale: renderScale });
+            scalePxToPt = pageWidthPt / viewport.width;
+
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            drawMarker();
+        }
+
+        function currentText() {
+            const [y, m, d] = dateInput.value.split('-');
+            const dataFmt = (d && m && y) ? `${d}/${m}/${y}` : '';
+            return `${prefixInput.value} ${dataFmt}`.trim();
+        }
+
+        function drawMarker() {
+            if (markerXpt === null) return;
+            const xPx = markerXpt / scalePxToPt;
+            const yPx = canvas.height - (markerYpt / scalePxToPt);
+            ctx.save();
+            ctx.font = `${boldInput.checked ? 'bold ' : ''}${(sizeInput.value / scalePxToPt)}px Arial`;
+            ctx.fillStyle = 'rgba(220,38,38,0.9)';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(currentText(), xPx, yPx);
+            ctx.beginPath();
+            ctx.arc(xPx, yPx, 3, 0, Math.PI * 2);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        canvas.addEventListener('click', async (e) => {
+            if (!originalBytes) return;
+            const rect = canvas.getBoundingClientRect();
+            const xPx = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const yPx = (e.clientY - rect.top) * (canvas.height / rect.height);
+            markerXpt = xPx * scalePxToPt;
+            markerYpt = pageHeightPt - (yPx * scalePxToPt);
+            await renderPreview(originalBytes.slice());
+            genBtn.disabled = false;
+        });
+
+        [dateInput, prefixInput, sizeInput, boldInput].forEach(el => {
+            el.addEventListener('input', async () => {
+                if (originalBytes) await renderPreview(originalBytes.slice());
+            });
+        });
+
+        resetBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            originalBytes = null;
+            fileLabel.textContent = 'Escolha o arquivo PDF';
+            previewCard.style.display = 'none';
+            settingsCard.style.display = 'none';
+        });
+
+        genBtn.addEventListener('click', async () => {
+            if (!originalBytes || markerXpt === null) {
+                statusEl.style.color = '#f87171';
+                statusEl.textContent = 'Selecione um arquivo e clique na posição da data.';
+                return;
+            }
+            try {
+                genBtn.disabled = true;
+                statusEl.style.color = '';
+                statusEl.textContent = 'Gerando PDF...';
+
+                try {
+                    localStorage.setItem('etiquetaValidadeSettingsProducao', JSON.stringify({
+                        prefix: prefixInput.value, size: sizeInput.value, bold: boldInput.checked
+                    }));
+                } catch(e) {}
+
+                const pdfDoc = await PDFDocument.load(originalBytes.slice());
+                const font = await pdfDoc.embedFont(
+                    boldInput.checked ? StandardFonts.HelveticaBold : StandardFonts.Helvetica
+                );
+                const text = currentText();
+                const size = parseFloat(sizeInput.value) || 9;
+
+                pdfDoc.getPages().forEach(page => {
+                    page.drawText(text, { x: markerXpt, y: markerYpt, size, font, color: rgb(0,0,0) });
+                });
+
+                const outBytes = await pdfDoc.save();
+                const blob = new Blob([outBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${fileName}_validade.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+                statusEl.style.color = '#4ade80';
+                statusEl.textContent = `Pronto! ${pdfDoc.getPages().length} página(s) com validade — tamanho original preservado.`;
+            } catch (err) {
+                statusEl.style.color = '#f87171';
+                statusEl.textContent = 'Erro ao gerar o PDF: ' + err.message;
+            } finally {
+                genBtn.disabled = false;
+            }
+        });
+    })();
+    </script>
+
+</body>
+</html>
