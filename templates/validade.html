@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 
+<!-- mesmo data-setor do setor.html, então usa o tema (cores) da produção normalmente -->
 <body data-setor="{{ setor }}">
 
     <main class="caixa">
@@ -56,10 +57,6 @@
                     <input type="number" id="sizeInput" value="4.5" min="2" max="12" step="0.5">
                 </div>
                 <div class="campo" style="max-width:110px;">
-                    <label for="qtdInput">Quantidade</label>
-                    <input type="number" id="qtdInput" value="1" min="1" step="1">
-                </div>
-                <div class="campo" style="max-width:110px;">
                     <label for="xInput">X (mm)</label>
                     <input type="number" id="xInput" min="0" max="104" step="1">
                 </div>
@@ -86,6 +83,9 @@
     (function(){
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
+        // Etiqueta da Zebra (tela da impressora): 832 x 1202 pontos.
+        // Em 203 dpi (8 pontos por mm) = 104 x 150 mm. Isso so afeta a PREVIA;
+        // a posicao da data no arquivo ZPL vai em mm, medida a partir do canto da etiqueta.
         const LARGURA_MM = 104;
         const COMPRIMENTO_MM = 150;
         const PX_POR_MM = 4;
@@ -99,7 +99,6 @@
         const dateInput = document.getElementById('dateInput');
         const prefixInput = document.getElementById('prefixInput');
         const sizeInput = document.getElementById('sizeInput');
-        const qtdInput = document.getElementById('qtdInput');
         const xInput = document.getElementById('xInput');
         const yInput = document.getElementById('yInput');
         const genBtn = document.getElementById('genBtn');
@@ -120,27 +119,30 @@
             if (s.size) sizeInput.value = s.size;
         } catch(e) {}
 
+        // O PDF do SAP guarda o codigo ZPL como texto, quebrado em linhas curtas.
+        // Juntando os pedacos sem separador o ZPL volta inteiro.
         async function extrairZplDoPdf(bytes) {
             const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
             let zpl = '';
             for (let p = 1; p <= pdf.numPages; p++) {
                 const page = await pdf.getPage(p);
                 const tc = await page.getTextContent();
-                zpl += tc.items.map(i => i.str).join(' ') + '\n';
+                zpl += tc.items.map(i => i.str).join('');
             }
             return zpl;
         }
 
+        // Le so o que a previa precisa: textos e codigo de barras da primeira etiqueta
         function lerCampos(zpl) {
-            const primeira = zpl.split(/\^XZ/i)[0];
+            const primeira = zpl.split('^XZ')[0];
             const campos = [];
-            primeira.split(/\^FO/i).slice(1).forEach(trecho => {
-                const pos = trecho.match(/^([\d.]+)\s*,\s*([\d.]+)/);
-                const dado = trecho.match(/\^FD([\s\S]*?)\^FS/i);
+            primeira.split('^FO').slice(1).forEach(trecho => {
+                const pos = trecho.match(/^([\d.]+),([\d.]+)/);
+                const dado = trecho.match(/\^FD([\s\S]*?)\^FS/);
                 if (!pos || !dado) return;
                 const x = parseFloat(pos[1]), y = parseFloat(pos[2]);
-                const fonte = trecho.match(/\^A0N\s*,\s*([\d.]+)/i);
-                const barra = trecho.match(/\^BC[A-Z]?\s*,\s*([\d.]+)/i);
+                const fonte = trecho.match(/\^A0N,([\d.]+)/);
+                const barra = trecho.match(/\^BC[A-Z]?,([\d.]+)/);
                 if (barra) campos.push({ tipo: 'barra', x, y, h: parseFloat(barra[1]), texto: dado[1] });
                 else if (fonte && dado[1].trim()) campos.push({ tipo: 'texto', x, y, h: parseFloat(fonte[1]), texto: dado[1] });
             });
@@ -150,6 +152,7 @@
         function textoValidade() {
             const [y, m, d] = dateInput.value.split('-');
             const dataFmt = (d && m && y) ? `${d}/${m}/${y}` : '';
+            // so ASCII simples: acentos e os caracteres ^ ~ \ tem significado especial no ZPL
             const limpo = `${prefixInput.value} ${dataFmt}`
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^ -~]/g, '').replace(/[\^~\\]/g, '').trim();
@@ -169,6 +172,7 @@
                     ctx.font = `${c.h * PX_POR_MM}px Arial`;
                     ctx.fillText(c.texto, c.x * PX_POR_MM, c.y * PX_POR_MM);
                 } else {
+                    // largura do codigo de barras e aproximada (so na previa)
                     ctx.fillStyle = '#333';
                     const largura = 28 * PX_POR_MM;
                     for (let i = 0; i < largura; i += 4) {
@@ -202,9 +206,11 @@
             try {
                 const zpl = await extrairZplDoPdf(new Uint8Array(await file.arrayBuffer()));
                 if (!zpl.includes('^XA') || !zpl.includes('^XZ')) {
-                    throw new Error('Não encontrei o código ZPL da etiqueta nesse PDF.');
+                    throw new Error('não encontrei o código ZPL da etiqueta nesse PDF.');
                 }
                 
+                // Removida a trava de erro do ^MUM. O sistema agora aceita o PDF e corrige automaticamente.
+
                 zplOriginal = zpl;
                 xInput.value = '';
                 yInput.value = '';
@@ -227,15 +233,16 @@
             const rect = canvas.getBoundingClientRect();
             const xMm = (e.clientX - rect.left) * (canvas.width / rect.width) / PX_POR_MM;
             const yMm = (e.clientY - rect.top) * (canvas.height / rect.height) / PX_POR_MM;
+            // ^FO em mm inteiros (mesmo padrao que o SAP usa nas posicoes)
             xInput.value = Math.round(xMm);
             yInput.value = Math.round(yMm);
             desenharPrevia();
             atualizarBotao();
         });
 
-        [dateInput, prefixInput, sizeInput, qtdInput, xInput, yInput].forEach(el => {
+        [dateInput, prefixInput, sizeInput, xInput, yInput].forEach(el => {
             el.addEventListener('input', () => {
-                if (zplOriginal && el.id !== 'qtdInput') desenharPrevia();
+                if (zplOriginal) desenharPrevia();
                 atualizarBotao();
             });
         });
@@ -262,53 +269,25 @@
                     }));
                 } catch(e) {}
 
-                const x = parseFloat(xInput.value);
-                const y = parseFloat(yInput.value);
+                const x = Math.round(parseFloat(xInput.value));
+                const y = Math.round(parseFloat(yInput.value));
                 const h = parseFloat(sizeInput.value) || 4.5;
                 const texto = textoValidade();
 
-                // FUNÇÃO DE CONVERSÃO E CORREÇÃO DE LARGURA PARA A ZEBRA
-                function mmParaPontos(zplStr) {
-                    let res = zplStr.replace(/\^MUM/gi, '');
-                    
-                    // Força a largura de impressão para 832 pontos (evita cortar a lateral direita)
-                    res = res.replace(/\^PW\d+/gi, '^PW832');
+                // mesmo estilo dos campos do SAP (fonte 0, orientacao normal, ^FH\)
+                const campoData = `^FO${x},${y}^A0N,${h},${h}^FH\\^FD${texto}^FS`;
 
-                    res = res.replace(/\^FO\s*([\d.]+)\s*,\s*([\d.]+)/gi, (m, px, py) => {
-                        return `^FO${Math.round(parseFloat(px) * 8)},${Math.round(parseFloat(py) * 8)}`;
-                    });
-                    
-                    res = res.replace(/\^A[A-Z0-9]+\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+))?/gi, (m, fh, fw) => {
-                        let fonte = m.match(/^\^A[A-Z0-9]+/i)[0];
-                        let hPts = Math.round(parseFloat(fh) * 8);
-                        if (fw !== undefined) {
-                            return `${fonte},${hPts},${Math.round(parseFloat(fw) * 8)}`;
-                        }
-                        return `${fonte},${hPts}`;
-                    });
-                    
-                    res = res.replace(/\^BC([A-Z]*)\s*,\s*([\d.]+)/gi, (m, orient, ch) => {
-                        return `^BC${orient},${Math.round(parseFloat(ch) * 8)}`;
-                    });
-                    
-                    return res;
-                }
-
-                const xPts = Math.round(x * 8);
-                const yPts = Math.round(y * 8);
-                const hPts = Math.round(h * 8);
+                // entra antes do ^XZ de cada etiqueta do arquivo
+                const partes = zplOriginal.split('^XZ');
+                const qtd = partes.length - 1;
                 
-                const qt = parseInt(qtdInput.value) || 1;
-                const comandoQtd = qt > 1 ? `^PQ${qt}` : '';
-                const campoData = `^FO${xPts},${yPts}^A0N,${hPts},${hPts}^FH\\^FD${texto}^FS\n${comandoQtd}`;
-
-                const zplConvertido = mmParaPontos(zplOriginal);
-                const partes = zplConvertido.split(/\^XZ/i);
-                const qtdPdfs = partes.length - 1;
-                
+                // Injeta a conversão para milímetros (^MUM) no código ZPL final antes de desenhar
                 const zplFinal = partes.slice(0, -1).map(p => {
-                    let trechoLimpo = p.replace(/\^PQ\d+/gi, '');
-                    return trechoLimpo.trim() + '\n' + campoData + '\n^XZ\n';
+                    let trecho = p;
+                    if (!trecho.includes('^MUM')) {
+                        trecho = trecho.replace(/\^FO/i, '^MUM\n^FO');
+                    }
+                    return trecho + campoData + '^XZ\n';
                 }).join('') + partes[partes.length - 1];
 
                 const blob = new Blob([zplFinal], { type: 'text/plain' });
@@ -322,7 +301,7 @@
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
 
                 statusEl.style.color = '#4ade80';
-                statusEl.textContent = `Pronto! Arquivo gerado para imprimir ${qtdPdfs * qt} etiqueta(s). Envie para a Zebra.`;
+                statusEl.textContent = `Pronto! ${qtd} etiqueta(s) com validade. Envie o .zpl direto pra Zebra (não imprima como PDF).`;
             } catch (err) {
                 statusEl.style.color = '#f87171';
                 statusEl.textContent = 'Erro ao gerar o arquivo: ' + err.message;
