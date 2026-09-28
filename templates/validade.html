@@ -56,6 +56,11 @@
                     <label for="sizeInput">Fonte (mm)</label>
                     <input type="number" id="sizeInput" value="4.5" min="2" max="12" step="0.5">
                 </div>
+                <!-- CAMPO DE QUANTIDADE ADICIONADO -->
+                <div class="campo" style="max-width:110px;">
+                    <label for="qtdInput">Quantidade</label>
+                    <input type="number" id="qtdInput" value="1" min="1" step="1">
+                </div>
                 <div class="campo" style="max-width:110px;">
                     <label for="xInput">X (mm)</label>
                     <input type="number" id="xInput" min="0" max="104" step="1">
@@ -99,6 +104,7 @@
         const dateInput = document.getElementById('dateInput');
         const prefixInput = document.getElementById('prefixInput');
         const sizeInput = document.getElementById('sizeInput');
+        const qtdInput = document.getElementById('qtdInput'); // Referência ao campo de quantidade
         const xInput = document.getElementById('xInput');
         const yInput = document.getElementById('yInput');
         const genBtn = document.getElementById('genBtn');
@@ -209,8 +215,6 @@
                     throw new Error('não encontrei o código ZPL da etiqueta nesse PDF.');
                 }
                 
-                // Removida a trava de erro do ^MUM. O sistema agora aceita o PDF e corrige automaticamente.
-
                 zplOriginal = zpl;
                 xInput.value = '';
                 yInput.value = '';
@@ -240,9 +244,9 @@
             atualizarBotao();
         });
 
-        [dateInput, prefixInput, sizeInput, xInput, yInput].forEach(el => {
+        [dateInput, prefixInput, sizeInput, qtdInput, xInput, yInput].forEach(el => {
             el.addEventListener('input', () => {
-                if (zplOriginal) desenharPrevia();
+                if (zplOriginal && el.id !== 'qtdInput') desenharPrevia();
                 atualizarBotao();
             });
         });
@@ -273,15 +277,19 @@
                 const y = Math.round(parseFloat(yInput.value));
                 const h = parseFloat(sizeInput.value) || 4.5;
                 const texto = textoValidade();
+                
+                // Lê a quantidade desejada e cria o comando ZPL ^PQ se for maior que 1
+                const qt = parseInt(qtdInput.value) || 1;
+                const comandoQtd = qt > 1 ? `^PQ${qt}` : '';
 
-                // mesmo estilo dos campos do SAP (fonte 0, orientacao normal, ^FH\)
-                const campoData = `^FO${x},${y}^A0N,${h},${h}^FH\\^FD${texto}^FS`;
+                // mesmo estilo dos campos do SAP (fonte 0, orientacao normal, ^FH\) + comando de quantidade
+                const campoData = `^FO${x},${y}^A0N,${h},${h}^FH\\^FD${texto}^FS\n${comandoQtd}`;
 
                 // entra antes do ^XZ de cada etiqueta do arquivo
                 const partes = zplOriginal.split('^XZ');
                 const qtd = partes.length - 1;
                 
-                // Injeta a conversão para milímetros (^MUM) no código ZPL final antes de desenhar
+                // Mantém a estrutura exata do seu commit antigo e injeta a conversão ^MUM + a validade e quantidade
                 const zplFinal = partes.slice(0, -1).map(p => {
                     let trecho = p;
                     if (!trecho.includes('^MUM')) {
@@ -301,7 +309,7 @@
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
 
                 statusEl.style.color = '#4ade80';
-                statusEl.textContent = `Pronto! ${qtd} etiqueta(s) com validade. Envie o .zpl direto pra Zebra (não imprima como PDF).`;
+                statusEl.textContent = `Pronto! ${qtd} etiqueta(s) gerada(s) com ${qt} cópia(s) cada. Envie o .zpl pra Zebra.`;
             } catch (err) {
                 statusEl.style.color = '#f87171';
                 statusEl.textContent = 'Erro ao gerar o arquivo: ' + err.message;
