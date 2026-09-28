@@ -208,9 +208,9 @@
                 if (!zpl.includes('^XA') || !zpl.includes('^XZ')) {
                     throw new Error('não encontrei o código ZPL da etiqueta nesse PDF.');
                 }
-                if (!zpl.includes('^MUM')) {
-                    throw new Error('esse ZPL não usa milímetros (^MUM). Avise o Thiago para ajustar.');
-                }
+                
+                // Removida a trava de erro do ^MUM. O sistema agora aceita o PDF e corrige automaticamente.
+
                 zplOriginal = zpl;
                 xInput.value = '';
                 yInput.value = '';
@@ -280,7 +280,15 @@
                 // entra antes do ^XZ de cada etiqueta do arquivo
                 const partes = zplOriginal.split('^XZ');
                 const qtd = partes.length - 1;
-                const zplFinal = partes.slice(0, -1).map(p => p + campoData + '^XZ\n').join('') + partes[partes.length - 1];
+                
+                // Injeta a conversão para milímetros (^MUM) no código ZPL final antes de desenhar
+                const zplFinal = partes.slice(0, -1).map(p => {
+                    let trecho = p;
+                    if (!trecho.includes('^MUM')) {
+                        trecho = trecho.replace(/\^FO/i, '^MUM\n^FO');
+                    }
+                    return trecho + campoData + '^XZ\n';
+                }).join('') + partes[partes.length - 1];
 
                 const blob = new Blob([zplFinal], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
