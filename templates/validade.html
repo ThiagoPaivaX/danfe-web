@@ -8,7 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 
-<!-- mesmo data-setor do setor.html, então usa o tema (cores) da produção normalmente -->
 <body data-setor="{{ setor }}">
 
     <main class="caixa">
@@ -56,7 +55,7 @@
                     <label for="sizeInput">Fonte (mm)</label>
                     <input type="number" id="sizeInput" value="4.5" min="2" max="12" step="0.5">
                 </div>
-                <!-- CAMPO DE QUANTIDADE ADICIONADO -->
+                <!-- NOVO CAMPO: Quantidade de cópias -->
                 <div class="campo" style="max-width:110px;">
                     <label for="qtdInput">Quantidade</label>
                     <input type="number" id="qtdInput" value="1" min="1" step="1">
@@ -88,9 +87,6 @@
     (function(){
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
-        // Etiqueta da Zebra (tela da impressora): 832 x 1202 pontos.
-        // Em 203 dpi (8 pontos por mm) = 104 x 150 mm. Isso so afeta a PREVIA;
-        // a posicao da data no arquivo ZPL vai em mm, medida a partir do canto da etiqueta.
         const LARGURA_MM = 104;
         const COMPRIMENTO_MM = 150;
         const PX_POR_MM = 4;
@@ -104,7 +100,7 @@
         const dateInput = document.getElementById('dateInput');
         const prefixInput = document.getElementById('prefixInput');
         const sizeInput = document.getElementById('sizeInput');
-        const qtdInput = document.getElementById('qtdInput'); // Referência ao campo de quantidade
+        const qtdInput = document.getElementById('qtdInput'); // Nova referência
         const xInput = document.getElementById('xInput');
         const yInput = document.getElementById('yInput');
         const genBtn = document.getElementById('genBtn');
@@ -125,8 +121,6 @@
             if (s.size) sizeInput.value = s.size;
         } catch(e) {}
 
-        // O PDF do SAP guarda o codigo ZPL como texto, quebrado em linhas curtas.
-        // Juntando os pedacos sem separador o ZPL volta inteiro.
         async function extrairZplDoPdf(bytes) {
             const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
             let zpl = '';
@@ -138,7 +132,6 @@
             return zpl;
         }
 
-        // Le so o que a previa precisa: textos e codigo de barras da primeira etiqueta
         function lerCampos(zpl) {
             const primeira = zpl.split('^XZ')[0];
             const campos = [];
@@ -158,7 +151,6 @@
         function textoValidade() {
             const [y, m, d] = dateInput.value.split('-');
             const dataFmt = (d && m && y) ? `${d}/${m}/${y}` : '';
-            // so ASCII simples: acentos e os caracteres ^ ~ \ tem significado especial no ZPL
             const limpo = `${prefixInput.value} ${dataFmt}`
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^ -~]/g, '').replace(/[\^~\\]/g, '').trim();
@@ -178,7 +170,6 @@
                     ctx.font = `${c.h * PX_POR_MM}px Arial`;
                     ctx.fillText(c.texto, c.x * PX_POR_MM, c.y * PX_POR_MM);
                 } else {
-                    // largura do codigo de barras e aproximada (so na previa)
                     ctx.fillStyle = '#333';
                     const largura = 28 * PX_POR_MM;
                     for (let i = 0; i < largura; i += 4) {
@@ -215,6 +206,7 @@
                     throw new Error('não encontrei o código ZPL da etiqueta nesse PDF.');
                 }
                 
+                // Trava original removida para aceitar o PDF
                 zplOriginal = zpl;
                 xInput.value = '';
                 yInput.value = '';
@@ -237,7 +229,6 @@
             const rect = canvas.getBoundingClientRect();
             const xMm = (e.clientX - rect.left) * (canvas.width / rect.width) / PX_POR_MM;
             const yMm = (e.clientY - rect.top) * (canvas.height / rect.height) / PX_POR_MM;
-            // ^FO em mm inteiros (mesmo padrao que o SAP usa nas posicoes)
             xInput.value = Math.round(xMm);
             yInput.value = Math.round(yMm);
             desenharPrevia();
@@ -277,25 +268,23 @@
                 const y = Math.round(parseFloat(yInput.value));
                 const h = parseFloat(sizeInput.value) || 4.5;
                 const texto = textoValidade();
-                
-                // Lê a quantidade desejada e cria o comando ZPL ^PQ se for maior que 1
+
+                // 1. Lê a quantidade do novo input
                 const qt = parseInt(qtdInput.value) || 1;
-                const comandoQtd = qt > 1 ? `^PQ${qt}` : '';
+                // 2. Prepara o comando ZPL de quantidade (^PQ) se for maior que 1
+                const comandoQtd = qt > 1 ? `\n^PQ${qt}` : '';
 
-                // mesmo estilo dos campos do SAP (fonte 0, orientacao normal, ^FH\) + comando de quantidade
-                const campoData = `^FO${x},${y}^A0N,${h},${h}^FH\\^FD${texto}^FS\n${comandoQtd}`;
+                // 3. Adiciona o comando da quantidade no final do campo da data
+                const campoData = `^FO${x},${y}^A0N,${h},${h}^FH\\^FD${texto}^FS${comandoQtd}`;
 
-                // entra antes do ^XZ de cada etiqueta do arquivo
                 const partes = zplOriginal.split('^XZ');
                 const qtd = partes.length - 1;
                 
-                // Mantém a estrutura exata do seu commit antigo e injeta a conversão ^MUM + a validade e quantidade
+                // 4. Junta as partes adicionando a data de validade ANTES do ^XZ sem alterar NADA do ZPL original
                 const zplFinal = partes.slice(0, -1).map(p => {
-                    let trecho = p;
-                    if (!trecho.includes('^MUM')) {
-                        trecho = trecho.replace(/\^FO/i, '^MUM\n^FO');
-                    }
-                    return trecho + campoData + '^XZ\n';
+                    // Limpa qualquer ^PQ antigo que possa vir do SAP para não duplicar a impressão
+                    let trecho = p.replace(/\^PQ\d+/gi, '');
+                    return trecho + campoData + '\n^XZ\n';
                 }).join('') + partes[partes.length - 1];
 
                 const blob = new Blob([zplFinal], { type: 'text/plain' });
@@ -309,7 +298,7 @@
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
 
                 statusEl.style.color = '#4ade80';
-                statusEl.textContent = `Pronto! ${qtd} etiqueta(s) gerada(s) com ${qt} cópia(s) cada. Envie o .zpl pra Zebra.`;
+                statusEl.textContent = `Pronto! ${qtd} etiqueta(s) processada(s) com ${qt} cópia(s) cada. Envie o .zpl pra Zebra.`;
             } catch (err) {
                 statusEl.style.color = '#f87171';
                 statusEl.textContent = 'Erro ao gerar o arquivo: ' + err.message;
