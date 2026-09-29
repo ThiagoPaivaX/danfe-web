@@ -60,11 +60,6 @@ Git instalado.
 
 Passo a Passo
 
-Clone o repositório:
-
-git clone https://github.com/SeuUsuario/seu-repositorio.git
-cd seu-repositorio
-
 
 Crie e ative um ambiente virtual (Opcional, mas recomendado):
 
