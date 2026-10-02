@@ -7,19 +7,16 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
-<!--
-    o data-setor aqui no body é o que muda a cor do site
-    dependendo de qual setor logou. o css usa isso pra aplicar
-    o tema certo. ex: data-setor="flv" deixa tudo verde
+<!-- 
+    O atributo data-setor define dinamicamente o tema visual da aplicação 
+    através do CSS, com base no setor autenticado (ex: "flv" aplica a paleta verde).
 -->
 <body data-setor="{{ setor }}">
 
     <main class="caixa">
 
-        <!-- topo com icone, nome do setor e botoes -->
+        <!-- CABEÇALHO DA APLICAÇÃO -->
         <section class="topo">
-
-            <!-- o icone e a descricao sao preenchidos pelo javascript la embaixo -->
             <div class="setor-icone" id="setorIcone"></div>
             <h1>{{ nome_setor }}</h1>
             <p class="setor-desc" id="setorDesc"></p>
@@ -28,65 +25,67 @@
                 <button class="btn-tutorial" onclick="abrirTutorial()">
                     📖 Como usar?
                 </button>
+                
                 {% if setor == "producao" %}
-                <!-- botao da ferramenta de etiquetas de validade, só aparece pra producao -->
+                <!-- Ferramenta de injeção ZPL, restrita ao setor de Produção Centralizada -->
                 <a href="/setor/producao/validade" class="btn-tutorial">
                     🏷️ Etiquetas de Validade
                 </a>
                 {% endif %}
-                <!-- esse link volta pra pagina de login -->
+                
                 <a href="/" class="btn-sair">Sair</a>
             </div>
-
         </section>
 
 
-        <!-- card de upload do pdf -->
+        <!-- MÓDULO 1: UPLOAD E PROCESSAMENTO DE PDFs -->
         <section class="card">
-            <h2>Enviar PDF</h2>
+            <h2>Enviar PDF(s)</h2>
             <p class="texto">
-                Selecione um arquivo PDF com uma ou várias NF-e.
-                O sistema vai analisar cada página, colocar o número da loja
+                Selecione um ou vários arquivos PDF. O sistema irá extrair as lojas e organizar automaticamente
                 {% if setor != "producao" %}
-                    e organizar na ordem da rota que você configurou.
+                    na ordem da rota configurada.
                 {% else %}
-                    e organizar em ordem crescente.
+                    em ordem crescente.
                 {% endif %}
             </p>
 
-            <!--
-                o action manda o pdf pro servidor
-                o {{ setor }} é trocado pelo python pelo nome real, ex: /upload/flv
-                o enctype é obrigatorio pra mandar arquivo
-            -->
-            <form action="/upload/{{ setor }}" method="post" enctype="multipart/form-data">
+            <form action="/upload/{{ setor }}" method="post" enctype="multipart/form-data" id="uploadForm">
                 <label class="area-upload">
-                    <span>Escolha o arquivo PDF</span>
-                    <input type="file" name="file" accept=".pdf" required>
+                    <span id="fileLabel">Escolha um ou mais arquivos PDF</span>
+                    <!-- O atributo 'multiple' permite a seleção de ficheiros em lote -->
+                    <input type="file" name="file" id="fileInput" accept=".pdf" multiple required>
                 </label>
-                <button type="submit">Processar DANFE</button>
+
+                <!-- Checkbox para geração de ficheiro ZIP com separação individual por loja -->
+                <div style="margin-top: 15px; text-align: left; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                        <input type="checkbox" name="separar_lojas" value="true" style="width: 18px; height: 18px; cursor: pointer;">
+                        <strong>Separar lojas individualmente</strong> (Baixar arquivo .zip com um PDF para cada loja)
+                    </label>
+                </div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button type="submit" id="btnProcessar" style="width: 100%;">Processar Notas</button>
+                </div>
             </form>
         </section>
 
 
-        <!--
-            esse card de configurar rota so aparece pra mercearia, pereciveis e flv
-            a producao nao precisa pq ela sempre usa ordem crescente
-        -->
+        <!-- MÓDULO 2: GESTÃO E ORDENAÇÃO DE ROTAS (Exclusivo para setores com roteirização) -->
         {% if setor != "producao" %}
         <section class="card card-rota">
 
             <h2>🗺 Configurar Ordem da Rota</h2>
             <p class="texto">
-                Clique nas lojas abaixo para adicionar na rota.
-                Arraste os itens pra mudar a ordem. Quando terminar clica em salvar.
+                Clique nas lojas abaixo para as adicionar à rota.
+                Arraste os itens para reordenar a sequência logística e guarde as alterações.
             </p>
 
-            <!-- lojas disponiveis pra adicionar na rota -->
             <div class="rota-secao">
                 <h3>Lojas disponíveis</h3>
                 <div class="lojas-disponiveis" id="lojasDisponiveis">
-                    <!-- o python gera um chip pra cada loja cadastrada -->
+                    <!-- Renderização dinâmica do mapeamento de lojas via Jinja2 -->
                     {% for loja in todas_lojas %}
                     <span class="loja-chip" data-loja="{{ loja }}">
                         {{ loja }}
@@ -95,15 +94,14 @@
                 </div>
             </div>
 
-            <!-- lista com a ordem da rota, da pra arrastar pra reordenar -->
             <div class="rota-secao">
                 <h3>
                     Ordem da rota
-                    <span class="rota-dica">(arraste pra mudar a ordem)</span>
+                    <span class="rota-dica">(arraste para ajustar a prioridade)</span>
                 </h3>
                 <div class="rota-lista" id="rotaLista">
 
-                    <!-- se ja tiver rota salva, mostra ela -->
+                    <!-- Carregamento do estado atual da rota guardada no backend -->
                     {% if rota_atual %}
                         {% for num in rota_atual %}
                         <div class="rota-item" draggable="true" data-loja="{{ num }}">
@@ -113,9 +111,8 @@
                         </div>
                         {% endfor %}
                     {% else %}
-                        <!-- se nao tiver rota ainda, mostra esse aviso -->
                         <div class="rota-vazia" id="rotaVazia">
-                            Nenhuma loja adicionada ainda. Clique nas lojas acima.
+                            Nenhuma loja adicionada à rota. Selecione as lojas acima.
                         </div>
                     {% endif %}
 
@@ -126,290 +123,266 @@
                 💾 Salvar Rota
             </button>
 
-            <!-- mensagem de sucesso ou erro depois de salvar -->
+            <!-- Elemento para exibição de feedback visual (Toasts/Alertas) -->
             <div class="rota-feedback" id="rotaFeedback"></div>
 
         </section>
         {% endif %}
 
 
-        <!-- dois cards de info no rodape -->
+        <!-- MÓDULO 3: INFORMAÇÕES DE SISTEMA -->
         <section class="info">
             <div>
                 <h3>Como funciona?</h3>
-                <p>O sistema lê o endereço da NF-e, compara com a lista de lojas cadastradas e escreve o número correto no PDF.</p>
+                <p>O sistema processa o OCR do endereço da NF-e, confronta com o mapeamento logístico e estampa a identificação na posição correta.</p>
             </div>
             <div>
                 <h3>Projeto</h3>
-                <p>Desenvolvido para praticar Python, FastAPI, HTML e CSS.</p>
+                <p>Desenvolvido para automatização e gestão logística com Python, FastAPI, HTML e CSS.</p>
             </div>
         </section>
 
         <footer>
-            <p>© 2026 - Projeto feito por Thiago Paiva</p>
+            <p>© 2026 - Desenvolvido por Thiago Paiva</p>
         </footer>
 
     </main>
 
 
-    <!-- modal do tutorial, fica escondido ate clicar em "como usar" -->
+    <!-- MODAL DE INSTRUÇÕES DE USO -->
     <div class="fundo-modal" id="fundoModal" onclick="fecharTutorial()">
-
-        <!--
-            o onclick no fundo fecha o modal se clicar fora
-            o stopPropagation dentro impede de fechar ao clicar dentro do modal
-        -->
         <div class="modal" onclick="event.stopPropagation()">
-
             <div class="modal-topo">
-                <h2>📖 Como usar o DANFE Processor</h2>
+                <h2>📖 Documentação de Uso - DANFE Processor</h2>
                 <button class="btn-fechar" onclick="fecharTutorial()">✕</button>
             </div>
 
             <div class="modal-corpo">
-
                 <div class="passo">
                     <div class="passo-numero">1</div>
                     <div class="passo-texto">
-                        <h3>Prepare o arquivo</h3>
-                        <p>Tenha em mãos um PDF com uma ou várias notas DANFE. Pode ser com várias páginas.</p>
+                        <h3>Prepare o(s) arquivo(s)</h3>
+                        <p>Exporte um ou múltiplos ficheiros PDF contendo as notas DANFE diretamente do sistema base.</p>
                     </div>
                 </div>
 
                 <div class="passo">
                     <div class="passo-numero">2</div>
                     <div class="passo-texto">
-                        <h3>Selecione o PDF</h3>
-                        <p>Clique em <strong>"Escolha o arquivo PDF"</strong> e selecione o arquivo. Só aceita <strong>.pdf</strong>.</p>
+                        <h3>Selecione os PDFs</h3>
+                        <p>Clique em <strong>"Escolha um ou mais arquivos PDF"</strong>. Pode selecionar dezenas de ficheiros de uma só vez (formato .pdf estrito).</p>
                     </div>
                 </div>
 
                 <div class="passo">
                     <div class="passo-numero">3</div>
                     <div class="passo-texto">
-                        <h3>Processe</h3>
-                        <p>Clique em <strong>"Processar DANFE"</strong>. O sistema lê cada página, identifica a loja pelo endereço e coloca o número automaticamente.</p>
+                        <h3>Processe e Separe</h3>
+                        <p>Marque a caixa <strong>"Separar lojas individualmente"</strong> caso deseje gerar um ficheiro independente para cada loja (ficheiro ZIP), e clique em Processar.</p>
                     </div>
                 </div>
 
                 <div class="passo">
                     <div class="passo-numero">4</div>
                     <div class="passo-texto">
-                        <h3>Baixe o resultado</h3>
-                        <p>O PDF vai baixar com as páginas organizadas
+                        <h3>Resultados e Ordenação</h3>
+                        <p>Os documentos serão devolvidos com OCR processado, agrupados
                         {% if setor != "producao" %}
-                            <strong>na ordem da sua rota</strong>.
+                            <strong>com base na sua configuração de rota</strong>.
                         {% else %}
-                            <strong>em ordem crescente</strong>.
+                            <strong>em ordem crescente (sequencial padrão)</strong>.
                         {% endif %}
                         </p>
                     </div>
                 </div>
 
-                <!-- esse passo so aparece pros setores com rota configuravel -->
                 {% if setor != "producao" %}
                 <div class="passo">
                     <div class="passo-numero">5</div>
                     <div class="passo-texto">
-                        <h3>Configurar a rota</h3>
-                        <p>Na seção <strong>"Configurar Ordem da Rota"</strong>, clique nas lojas pra adicionar e arraste pra definir a ordem. Depois clica em <strong>"Salvar Rota"</strong>.</p>
+                        <h3>Configuração da Logística</h3>
+                        <p>Na secção <strong>"Configurar Ordem da Rota"</strong>, selecione e arraste os elementos para definir o percurso de entrega exato. A prioridade será gravada no servidor.</p>
                     </div>
                 </div>
                 {% endif %}
 
                 <div class="aviso">
                     <span>⚠️</span>
-                    <p>Se o endereço de alguma página não estiver cadastrado no sistema, ela vai receber o número <strong>00</strong> e vai aparecer no começo do PDF.</p>
+                    <p>Qualquer nota com endereço não reconhecido pela base de dados será categorizada como <strong>00 (Não Identificado)</strong>, sendo alocada no topo do documento final para conferência manual.</p>
                 </div>
-
             </div>
 
             <div class="modal-rodape">
-                <button class="btn-ok" onclick="fecharTutorial()">Entendi, vamos lá!</button>
+                <button class="btn-ok" onclick="fecharTutorial()">Compreendido</button>
             </div>
-
         </div>
     </div>
 
 
+    <!-- SCRIPT PRINCIPAL DA APLICAÇÃO -->
     <script>
+        // Injeção de variáveis do servidor no contexto do cliente
+        const SETOR = "{{ setor }}";
 
-        // pega o setor do python pra usar no js
-        const SETOR = "{{ setor }}"
-
-        // icone e descricao de cada setor
+        // Dicionário de configuração visual para os dashboards
         const TEMAS = {
-            producao:   { icone: "🏭", desc: "Processamento em ordem crescente." },
-            mercearia:  { icone: "🌾", desc: "Setor de arroz, feijão, massas e mercearia." },
-            pereciveis: { icone: "🧊", desc: "Setor de carnes, frios e perecíveis." },
-            flv:        { icone: "🥦", desc: "Setor de Frutas, Legumes e Verduras." },
-        }
+            producao:   { icone: "🏭", desc: "Processamento e agregação em ordem crescente." },
+            mercearia:  { icone: "🌾", desc: "Gestão logística: Arroz, feijão, massas e mercearia." },
+            pereciveis: { icone: "🧊", desc: "Gestão logística: Carnes, frios e perecíveis." },
+            flv:        { icone: "🥦", desc: "Gestão logística: Frutas, Legumes e Verduras." },
+        };
 
-        // coloca o icone e a descricao certa na pagina
-        const tema = TEMAS[SETOR] || { icone: "📦", desc: "" }
-        document.getElementById("setorIcone").textContent = tema.icone
-        document.getElementById("setorDesc").textContent  = tema.desc
+        const tema = TEMAS[SETOR] || { icone: "📦", desc: "" };
+        document.getElementById("setorIcone").textContent = tema.icone;
+        document.getElementById("setorDesc").textContent  = tema.desc;
 
+        // Atualização de UI (Interface) dinâmica para seleção de múltiplos ficheiros
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length === 1) {
+                fileLabel.textContent = this.files[0].name;
+            } else if (this.files.length > 1) {
+                fileLabel.textContent = this.files.length + " arquivos selecionados prontos para processar";
+            } else {
+                fileLabel.textContent = "Escolha um ou mais arquivos PDF";
+            }
+        });
 
-        // abre o modal do tutorial
+        // Controlo de estado do Modal de Documentação
         function abrirTutorial() {
-            document.getElementById("fundoModal").classList.add("visivel")
+            document.getElementById("fundoModal").classList.add("visivel");
         }
 
-        // fecha o modal do tutorial
         function fecharTutorial() {
-            document.getElementById("fundoModal").classList.remove("visivel")
+            document.getElementById("fundoModal").classList.remove("visivel");
         }
 
-        // fecha o modal se apertar ESC
         document.addEventListener("keydown", function(e) {
-            if (e.key === "Escape") fecharTutorial()
-        })
+            if (e.key === "Escape") fecharTutorial();
+        });
 
-
-        // esse bloco so roda pra mercearia, pereciveis e flv
-        // a producao nao tem configuracao de rota
+        // Motor de Drag & Drop para gestão de Rotas (Inativo para o setor de Produção)
         if (SETOR !== "producao") {
 
-            // quando clica num chip de loja, chama a funcao pra adicionar na rota
             document.querySelectorAll(".loja-chip").forEach(chip => {
                 chip.addEventListener("click", function() {
-                    adicionarNaRota(this.dataset.loja)
-                })
-            })
+                    adicionarNaRota(this.dataset.loja);
+                });
+            });
 
-            // adiciona uma loja na lista de rota
             function adicionarNaRota(numero) {
-
-                // verifica se essa loja ja esta na rota
-                const jaExiste = document.querySelector(`.rota-item[data-loja="${numero}"]`)
+                const jaExiste = document.querySelector(`.rota-item[data-loja="${numero}"]`);
                 if (jaExiste) {
-                    mostrarFeedback("Loja " + numero + " já está na rota!", "erro")
-                    return
+                    mostrarFeedback("A Loja " + numero + " já consta na rota de entrega.", "erro");
+                    return;
                 }
 
-                // remove o aviso de lista vazia se ainda tiver aparecendo
-                const avisoVazia = document.getElementById("rotaVazia")
-                if (avisoVazia) avisoVazia.remove()
+                const avisoVazia = document.getElementById("rotaVazia");
+                if (avisoVazia) avisoVazia.remove();
 
-                // cria o elemento html do item de rota
-                const lista = document.getElementById("rotaLista")
-                const item  = document.createElement("div")
-                item.className    = "rota-item"
-                item.draggable    = true
-                item.dataset.loja = numero
+                const lista = document.getElementById("rotaLista");
+                const item  = document.createElement("div");
+                item.className    = "rota-item";
+                item.draggable    = true;
+                item.dataset.loja = numero;
                 item.innerHTML    = `
                     <span class="rota-handle">⠿</span>
                     <span class="rota-num">Loja ${numero}</span>
                     <button class="rota-remover" onclick="removerDaRota('${numero}')">✕</button>
-                `
+                `;
 
-                lista.appendChild(item)
-
-                // ativa o drag and drop no novo item
-                ativarDragDrop()
+                lista.appendChild(item);
+                ativarDragDrop();
             }
 
-            // remove uma loja da lista de rota
             function removerDaRota(numero) {
-                const item = document.querySelector(`.rota-item[data-loja="${numero}"]`)
-                if (item) item.remove()
+                const item = document.querySelector(`.rota-item[data-loja="${numero}"]`);
+                if (item) item.remove();
 
-                // se a lista ficou vazia, mostra o aviso de novo
-                const lista = document.getElementById("rotaLista")
+                const lista = document.getElementById("rotaLista");
                 if (lista.children.length === 0) {
-                    lista.innerHTML = `<div class="rota-vazia" id="rotaVazia">Nenhuma loja adicionada ainda. Clique nas lojas acima.</div>`
+                    lista.innerHTML = `<div class="rota-vazia" id="rotaVazia">Nenhuma loja adicionada à rota. Selecione as lojas acima.</div>`;
                 }
             }
 
-            // essa parte faz o drag and drop funcionar
-            // drag and drop = arrastar e soltar pra reordenar
-            let itemArrastando = null
+            // Variável de memória para o elemento em arrastamento
+            let itemArrastando = null;
 
             function ativarDragDrop() {
                 document.querySelectorAll(".rota-item").forEach(item => {
-
-                    // quando começa a arrastar, guarda qual item é e deixa ele meio transparente
                     item.addEventListener("dragstart", function() {
-                        itemArrastando = this
-                        setTimeout(() => this.style.opacity = "0.4", 0)
-                    })
+                        itemArrastando = this;
+                        setTimeout(() => this.style.opacity = "0.4", 0);
+                    });
 
-                    // quando solta, volta a opacidade normal
                     item.addEventListener("dragend", function() {
-                        this.style.opacity = "1"
-                        itemArrastando = null
-                    })
+                        this.style.opacity = "1";
+                        itemArrastando = null;
+                    });
 
-                    // quando passa por cima de outro item, move o arrastado pra essa posicao
                     item.addEventListener("dragover", function(e) {
-                        e.preventDefault()
+                        e.preventDefault();
                         if (itemArrastando && itemArrastando !== this) {
-                            const lista = document.getElementById("rotaLista")
-                            const todos = [...lista.querySelectorAll(".rota-item")]
-                            const posAtual = todos.indexOf(itemArrastando)
-                            const posAlvo  = todos.indexOf(this)
+                            const lista = document.getElementById("rotaLista");
+                            const todos = [...lista.querySelectorAll(".rota-item")];
+                            const posAtual = todos.indexOf(itemArrastando);
+                            const posAlvo  = todos.indexOf(this);
 
                             if (posAtual < posAlvo) {
-                                lista.insertBefore(itemArrastando, this.nextSibling)
+                                lista.insertBefore(itemArrastando, this.nextSibling);
                             } else {
-                                lista.insertBefore(itemArrastando, this)
+                                lista.insertBefore(itemArrastando, this);
                             }
                         }
-                    })
-                })
+                    });
+                });
             }
 
-            // ativa o drag drop nos itens que ja estavam na lista quando a pagina abriu
-            ativarDragDrop()
+            ativarDragDrop();
 
-
-            // salva a rota mandando pro servidor
+            // Comunicação Assíncrona com o Backend (Fetch API) para persistência de dados
             async function salvarRota() {
-                const itens = document.querySelectorAll(".rota-item")
-                const rota  = [...itens].map(item => item.dataset.loja)
+                const itens = document.querySelectorAll(".rota-item");
+                const rota  = [...itens].map(item => item.dataset.loja);
 
                 if (rota.length === 0) {
-                    mostrarFeedback("Adicione pelo menos uma loja na rota!", "erro")
-                    return
+                    mostrarFeedback("A rota deve conter pelo menos um ponto de entrega.", "erro");
+                    return;
                 }
 
                 try {
-                    // manda um POST pro servidor com a rota em json
                     const resposta = await fetch(`/rota/${SETOR}`, {
                         method:  "POST",
                         headers: { "Content-Type": "application/json" },
                         body:    JSON.stringify({ rota: rota }),
-                    })
+                    });
 
                     if (resposta.ok) {
-                        mostrarFeedback("✅ Rota salva! (" + rota.length + " lojas)", "ok")
+                        mostrarFeedback("✅ Rota logística sincronizada com sucesso! (" + rota.length + " paragens)", "ok");
                     } else {
-                        mostrarFeedback("❌ Erro ao salvar, tenta de novo.", "erro")
+                        mostrarFeedback("❌ Falha de sincronização. Tente novamente.", "erro");
                     }
                 } catch (e) {
-                    mostrarFeedback("❌ Sem conexão com o servidor.", "erro")
+                    mostrarFeedback("❌ Sem comunicação com o servidor principal.", "erro");
                 }
             }
 
-            // mostra uma mensagem de feedback por 4 segundos
             function mostrarFeedback(msg, tipo) {
-                const el = document.getElementById("rotaFeedback")
-                el.textContent = msg
-                el.className   = "rota-feedback " + (tipo === "ok" ? "feedback-ok" : "feedback-erro")
+                const el = document.getElementById("rotaFeedback");
+                el.textContent = msg;
+                el.className   = "rota-feedback " + (tipo === "ok" ? "feedback-ok" : "feedback-erro");
                 setTimeout(() => {
-                    el.textContent = ""
-                    el.className   = "rota-feedback"
-                }, 4000)
+                    el.textContent = "";
+                    el.className   = "rota-feedback";
+                }, 4000);
             }
 
-            // expoe as funcoes pro html conseguir chamar
-            window.salvarRota    = salvarRota
-            window.removerDaRota = removerDaRota
-
+            // Exportação das funções para o escopo global do Window
+            window.salvarRota    = salvarRota;
+            window.removerDaRota = removerDaRota;
         }
-
     </script>
-
 </body>
 </html>
