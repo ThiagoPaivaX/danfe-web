@@ -148,7 +148,8 @@ def ordenar_por_rota(paginas: list, rota: list) -> list:
     fora_da_rota.sort(key=lambda p: p["numero"])
     return na_rota + fora_da_rota
 
-def processar_multiplos_pdfs(caminhos_upload: List[str], caminho_saida_base: str, setor: str, separar_lojas: bool) -> tuple:
+# NOVO: Recebe rota_front do navegador
+def processar_multiplos_pdfs(caminhos_upload: List[str], caminho_saida_base: str, setor: str, separar_lojas: bool, rota_front: list = None) -> tuple:
     doc_master = fitz.open()
 
     for caminho in caminhos_upload:
@@ -202,7 +203,8 @@ def processar_multiplos_pdfs(caminhos_upload: List[str], caminho_saida_base: str
         if setor == "producao":
             paginas_ordenadas = sorted(paginas, key=lambda p: p["numero"])
         else:
-            rota = carregar_rota(setor)
+            # NOVO: Usa a rota que veio do LocalStorage. Se estiver vazia, tenta a do servidor.
+            rota = rota_front if rota_front else carregar_rota(setor)
             if rota:
                 paginas_ordenadas = ordenar_por_rota(paginas, rota)
             else:
@@ -250,9 +252,20 @@ async def pagina_validade(request: Request, setor: str):
     return templates.TemplateResponse(request=request, name="validade.html", context={"setor": setor, "nome_setor": NOMES_SETORES[setor]})
 
 @app.post("/upload/{setor}")
-async def upload_pdf(setor: str, files: List[UploadFile] = File(..., alias="file"), separar_lojas: bool = Form(False)):
+async def upload_pdf(
+    setor: str, 
+    files: List[UploadFile] = File(..., alias="file"), 
+    separar_lojas: bool = Form(False),
+    rota_local: str = Form("[]") # NOVO: Recebe a rota invisível
+):
     if setor not in USUARIOS:
         raise HTTPException(status_code=404, detail="Setor não encontrado.")
+
+    # Converte a rota invisível de volta para lista
+    try:
+        rota_front = json.loads(rota_local)
+    except:
+        rota_front = []
 
     caminhos_upload = []
     try:
@@ -269,7 +282,8 @@ async def upload_pdf(setor: str, files: List[UploadFile] = File(..., alias="file
             raise HTTPException(status_code=400, detail="Nenhum arquivo PDF válido foi enviado.")
 
         caminho_saida_base = os.path.join(OUTPUT_FOLDER, f"processado_{uuid.uuid4().hex}")
-        caminho_final, tipo_saida, info = processar_multiplos_pdfs(caminhos_upload, caminho_saida_base, setor, separar_lojas)
+        # Envia a rota_front para o motor
+        caminho_final, tipo_saida, info = processar_multiplos_pdfs(caminhos_upload, caminho_saida_base, setor, separar_lojas, rota_front)
 
         if tipo_saida == "zip":
             nome_download = f"{NOMES_SETORES[setor]} - Lojas Separadas.zip"
