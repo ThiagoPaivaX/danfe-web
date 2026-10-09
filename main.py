@@ -148,7 +148,6 @@ def ordenar_por_rota(paginas: list, rota: list) -> list:
     fora_da_rota.sort(key=lambda p: p["numero"])
     return na_rota + fora_da_rota
 
-# NOVO: Recebe rota_front do navegador
 def processar_multiplos_pdfs(caminhos_upload: List[str], caminho_saida_base: str, setor: str, separar_lojas: bool, rota_front: list = None) -> tuple:
     doc_master = fitz.open()
 
@@ -203,7 +202,7 @@ def processar_multiplos_pdfs(caminhos_upload: List[str], caminho_saida_base: str
         if setor == "producao":
             paginas_ordenadas = sorted(paginas, key=lambda p: p["numero"])
         else:
-            # NOVO: Usa a rota que veio do LocalStorage. Se estiver vazia, tenta a do servidor.
+            # NOVO: Dá prioridade à rota desenhada na tela. Se falhar, tenta a do servidor.
             rota = rota_front if rota_front else carregar_rota(setor)
             if rota:
                 paginas_ordenadas = ordenar_por_rota(paginas, rota)
@@ -256,12 +255,12 @@ async def upload_pdf(
     setor: str, 
     files: List[UploadFile] = File(..., alias="file"), 
     separar_lojas: bool = Form(False),
-    rota_local: str = Form("[]") # NOVO: Recebe a rota invisível
+    rota_local: str = Form("[]") # NOVO: Captura a rota invisível do HTML
 ):
     if setor not in USUARIOS:
         raise HTTPException(status_code=404, detail="Setor não encontrado.")
 
-    # Converte a rota invisível de volta para lista
+    # Converte o texto escondido de volta para lista
     try:
         rota_front = json.loads(rota_local)
     except:
@@ -282,7 +281,6 @@ async def upload_pdf(
             raise HTTPException(status_code=400, detail="Nenhum arquivo PDF válido foi enviado.")
 
         caminho_saida_base = os.path.join(OUTPUT_FOLDER, f"processado_{uuid.uuid4().hex}")
-        # Envia a rota_front para o motor
         caminho_final, tipo_saida, info = processar_multiplos_pdfs(caminhos_upload, caminho_saida_base, setor, separar_lojas, rota_front)
 
         if tipo_saida == "zip":
