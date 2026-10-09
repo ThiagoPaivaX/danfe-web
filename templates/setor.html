@@ -7,38 +7,27 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
-<!-- 
-    O atributo data-setor define dinamicamente o tema visual da aplicação 
-    através do CSS, com base no setor autenticado (ex: "flv" aplica a paleta verde).
--->
 <body data-setor="{{ setor }}">
 
     <main class="caixa">
 
-        <!-- CABEÇALHO DA APLICAÇÃO -->
         <section class="topo">
             <div class="setor-icone" id="setorIcone"></div>
             <h1>{{ nome_setor }}</h1>
             <p class="setor-desc" id="setorDesc"></p>
 
             <div class="topo-acoes">
-                <button class="btn-tutorial" onclick="abrirTutorial()">
-                    📖 Como usar?
-                </button>
+                <button class="btn-tutorial" onclick="abrirTutorial()">📖 Como usar?</button>
                 
                 {% if setor == "producao" %}
-                <!-- Ferramenta de injeção ZPL, restrita ao setor de Produção Centralizada -->
-                <a href="/setor/producao/validade" class="btn-tutorial">
-                    🏷️ Etiquetas de Validade
-                </a>
+                <a href="/setor/producao/validade" class="btn-tutorial">🏷️ Etiquetas de Validade</a>
                 {% endif %}
                 
                 <a href="/" class="btn-sair">Sair</a>
             </div>
         </section>
 
-
-        <!-- MÓDULO 1: UPLOAD E PROCESSAMENTO DE PDFs -->
+        <!-- CARD DE UPLOAD -->
         <section class="card">
             <h2>Enviar PDF(s)</h2>
             <p class="texto">
@@ -50,14 +39,17 @@
                 {% endif %}
             </p>
 
-            <form action="/upload/{{ setor }}" method="post" enctype="multipart/form-data" id="uploadForm">
+            <!-- A função prepararEnvio() vai anexar a ordem exata da tela antes de enviar o PDF -->
+            <form action="/upload/{{ setor }}" method="post" enctype="multipart/form-data" id="uploadForm" onsubmit="prepararEnvio()">
+                
+                <!-- INPUT INVISÍVEL ONDE A ROTA SERÁ INJETADA -->
+                <input type="hidden" name="rota_local" id="rotaLocalInput" value="[]">
+
                 <label class="area-upload">
                     <span id="fileLabel">Escolha um ou mais arquivos PDF</span>
-                    <!-- O atributo 'multiple' permite a seleção de ficheiros em lote -->
                     <input type="file" name="file" id="fileInput" accept=".pdf" multiple required>
                 </label>
 
-                <!-- Checkbox para geração de ficheiro ZIP com separação individual por loja -->
                 <div style="margin-top: 15px; text-align: left; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px;">
                     <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
                         <input type="checkbox" name="separar_lojas" value="true" style="width: 18px; height: 18px; cursor: pointer;">
@@ -71,11 +63,9 @@
             </form>
         </section>
 
-
-        <!-- MÓDULO 2: GESTÃO E ORDENAÇÃO DE ROTAS (Exclusivo para setores com roteirização) -->
+        <!-- CARD DE ROTAS (EXCETO PRODUÇÃO) -->
         {% if setor != "producao" %}
         <section class="card card-rota">
-
             <h2>🗺 Configurar Ordem da Rota</h2>
             <p class="texto">
                 Clique nas lojas abaixo para as adicionar à rota.
@@ -85,52 +75,25 @@
             <div class="rota-secao">
                 <h3>Lojas disponíveis</h3>
                 <div class="lojas-disponiveis" id="lojasDisponiveis">
-                    <!-- Renderização dinâmica do mapeamento de lojas via Jinja2 -->
                     {% for loja in todas_lojas %}
-                    <span class="loja-chip" data-loja="{{ loja }}">
-                        {{ loja }}
-                    </span>
+                    <span class="loja-chip" data-loja="{{ loja }}">{{ loja }}</span>
                     {% endfor %}
                 </div>
             </div>
 
             <div class="rota-secao">
-                <h3>
-                    Ordem da rota
-                    <span class="rota-dica">(arraste para ajustar a prioridade)</span>
-                </h3>
+                <h3>Ordem da rota <span class="rota-dica">(arraste para ajustar a prioridade)</span></h3>
                 <div class="rota-lista" id="rotaLista">
-
-                    <!-- Carregamento do estado atual da rota guardada no backend -->
-                    {% if rota_atual %}
-                        {% for num in rota_atual %}
-                        <div class="rota-item" draggable="true" data-loja="{{ num }}">
-                            <span class="rota-handle">⠿</span>
-                            <span class="rota-num">Loja {{ num }}</span>
-                            <button class="rota-remover" onclick="removerDaRota('{{ num }}')">✕</button>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="rota-vazia" id="rotaVazia">
-                            Nenhuma loja adicionada à rota. Selecione as lojas acima.
-                        </div>
-                    {% endif %}
-
+                    <!-- Gerado dinamicamente via JavaScript -->
+                    <div class="rota-vazia" id="rotaVazia">Carregando a sua rota...</div>
                 </div>
             </div>
 
-            <button class="btn-salvar-rota" onclick="salvarRota()">
-                💾 Salvar Rota
-            </button>
-
-            <!-- Elemento para exibição de feedback visual (Toasts/Alertas) -->
+            <button class="btn-salvar-rota" onclick="salvarRota()">💾 Salvar Rota</button>
             <div class="rota-feedback" id="rotaFeedback"></div>
-
         </section>
         {% endif %}
 
-
-        <!-- MÓDULO 3: INFORMAÇÕES DE SISTEMA -->
         <section class="info">
             <div>
                 <h3>Como funciona?</h3>
@@ -145,18 +108,15 @@
         <footer>
             <p>© 2026 - Desenvolvido por Thiago Paiva</p>
         </footer>
-
     </main>
 
-
-    <!-- MODAL DE INSTRUÇÕES DE USO -->
+    <!-- MODAL DE INSTRUÇÕES -->
     <div class="fundo-modal" id="fundoModal" onclick="fecharTutorial()">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-topo">
                 <h2>📖 Documentação de Uso - DANFE Processor</h2>
                 <button class="btn-fechar" onclick="fecharTutorial()">✕</button>
             </div>
-
             <div class="modal-corpo">
                 <div class="passo">
                     <div class="passo-numero">1</div>
@@ -165,7 +125,6 @@
                         <p>Exporte um ou múltiplos ficheiros PDF contendo as notas DANFE diretamente do sistema base.</p>
                     </div>
                 </div>
-
                 <div class="passo">
                     <div class="passo-numero">2</div>
                     <div class="passo-texto">
@@ -173,7 +132,6 @@
                         <p>Clique em <strong>"Escolha um ou mais arquivos PDF"</strong>. Pode selecionar dezenas de ficheiros de uma só vez (formato .pdf estrito).</p>
                     </div>
                 </div>
-
                 <div class="passo">
                     <div class="passo-numero">3</div>
                     <div class="passo-texto">
@@ -181,50 +139,37 @@
                         <p>Marque a caixa <strong>"Separar lojas individualmente"</strong> caso deseje gerar um ficheiro independente para cada loja (ficheiro ZIP), e clique em Processar.</p>
                     </div>
                 </div>
-
                 <div class="passo">
                     <div class="passo-numero">4</div>
                     <div class="passo-texto">
                         <h3>Resultados e Ordenação</h3>
-                        <p>Os documentos serão devolvidos com OCR processado, agrupados
-                        {% if setor != "producao" %}
-                            <strong>com base na sua configuração de rota</strong>.
-                        {% else %}
-                            <strong>em ordem crescente (sequencial padrão)</strong>.
-                        {% endif %}
-                        </p>
+                        <p>Os documentos serão devolvidos com OCR processado e agrupados.</p>
                     </div>
                 </div>
-
                 {% if setor != "producao" %}
                 <div class="passo">
                     <div class="passo-numero">5</div>
                     <div class="passo-texto">
                         <h3>Configuração da Logística</h3>
-                        <p>Na secção <strong>"Configurar Ordem da Rota"</strong>, selecione e arraste os elementos para definir o percurso de entrega exato. A prioridade será gravada no servidor.</p>
+                        <p>Na secção <strong>"Configurar Ordem da Rota"</strong>, selecione e arraste os elementos para definir o percurso de entrega exato. A prioridade ficará gravada no seu computador.</p>
                     </div>
                 </div>
                 {% endif %}
-
                 <div class="aviso">
                     <span>⚠️</span>
                     <p>Qualquer nota com endereço não reconhecido pela base de dados será categorizada como <strong>00 (Não Identificado)</strong>, sendo alocada no topo do documento final para conferência manual.</p>
                 </div>
             </div>
-
             <div class="modal-rodape">
                 <button class="btn-ok" onclick="fecharTutorial()">Compreendido</button>
             </div>
         </div>
     </div>
 
-
-    <!-- SCRIPT PRINCIPAL DA APLICAÇÃO -->
+    <!-- SCRIPT PRINCIPAL -->
     <script>
-        // Injeção de variáveis do servidor no contexto do cliente
         const SETOR = "{{ setor }}";
 
-        // Dicionário de configuração visual para os dashboards
         const TEMAS = {
             producao:   { icone: "🏭", desc: "Processamento e agregação em ordem crescente." },
             mercearia:  { icone: "🌾", desc: "Gestão logística: Arroz, feijão, massas e mercearia." },
@@ -236,7 +181,6 @@
         document.getElementById("setorIcone").textContent = tema.icone;
         document.getElementById("setorDesc").textContent  = tema.desc;
 
-        // Atualização de UI (Interface) dinâmica para seleção de múltiplos ficheiros
         const fileInput = document.getElementById('fileInput');
         const fileLabel = document.getElementById('fileLabel');
         
@@ -250,26 +194,51 @@
             }
         });
 
-        // Controlo de estado do Modal de Documentação
-        function abrirTutorial() {
-            document.getElementById("fundoModal").classList.add("visivel");
-        }
+        function abrirTutorial() { document.getElementById("fundoModal").classList.add("visivel"); }
+        function fecharTutorial() { document.getElementById("fundoModal").classList.remove("visivel"); }
+        document.addEventListener("keydown", function(e) { if (e.key === "Escape") fecharTutorial(); });
 
-        function fecharTutorial() {
-            document.getElementById("fundoModal").classList.remove("visivel");
-        }
-
-        document.addEventListener("keydown", function(e) {
-            if (e.key === "Escape") fecharTutorial();
-        });
-
-        // Motor de Drag & Drop para gestão de Rotas (Inativo para o setor de Produção)
+        // MOTOR DE ROTAS E SINCRONIZAÇÃO INTELIGENTE
         if (SETOR !== "producao") {
 
+            // 1. O Python injeta a rota que ele tem na memória neste array
+            const rotaDoServidor = [
+                {% if rota_atual %}
+                    {% for num in rota_atual %}"{{ num }}"{% if not loop.last %},{% endif %}{% endfor %}
+                {% endif %}
+            ];
+
+            // 2. LÓGICA DE RECUPERAÇÃO DE MEMÓRIA
+            document.addEventListener("DOMContentLoaded", () => {
+                const lista = document.getElementById("rotaLista");
+                
+                if (rotaDoServidor.length > 0) {
+                    // O servidor não reiniciou. Tem a rota. Guardamos no PC como backup de segurança.
+                    localStorage.setItem('rota_' + SETOR, JSON.stringify(rotaDoServidor));
+                    lista.innerHTML = "";
+                    rotaDoServidor.forEach(num => adicionarNaRota(num));
+                } else {
+                    // O servidor reiniciou (veio vazio). Restauramos a partir da memória do navegador.
+                    const rotaSalva = JSON.parse(localStorage.getItem('rota_' + SETOR) || '[]');
+                    
+                    if (rotaSalva.length > 0) {
+                        lista.innerHTML = "";
+                        rotaSalva.forEach(num => adicionarNaRota(num)); // Desenha as lojas
+                        
+                        // Envia de volta para o Python silenciosamente para ele recuperar a memória
+                        fetch(`/rota/${SETOR}`, {
+                            method:  "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body:    JSON.stringify({ rota: rotaSalva }),
+                        });
+                    } else {
+                        lista.innerHTML = `<div class="rota-vazia" id="rotaVazia">Nenhuma loja adicionada à rota. Selecione as lojas acima.</div>`;
+                    }
+                }
+            });
+
             document.querySelectorAll(".loja-chip").forEach(chip => {
-                chip.addEventListener("click", function() {
-                    adicionarNaRota(this.dataset.loja);
-                });
+                chip.addEventListener("click", function() { adicionarNaRota(this.dataset.loja); });
             });
 
             function adicionarNaRota(numero) {
@@ -290,7 +259,7 @@
                 item.innerHTML    = `
                     <span class="rota-handle">⠿</span>
                     <span class="rota-num">Loja ${numero}</span>
-                    <button class="rota-remover" onclick="removerDaRota('${numero}')">✕</button>
+                    <button class="rota-remover" type="button" onclick="removerDaRota('${numero}')">✕</button>
                 `;
 
                 lista.appendChild(item);
@@ -307,7 +276,6 @@
                 }
             }
 
-            // Variável de memória para o elemento em arrastamento
             let itemArrastando = null;
 
             function ativarDragDrop() {
@@ -340,10 +308,7 @@
                 });
             }
 
-            ativarDragDrop();
-
-            // Comunicação Assíncrona com o Backend (Fetch API) para persistência de dados
-            async function salvarRota() {
+            function salvarRota() {
                 const itens = document.querySelectorAll(".rota-item");
                 const rota  = [...itens].map(item => item.dataset.loja);
 
@@ -352,20 +317,20 @@
                     return;
                 }
 
+                // O Backup Infalível
+                localStorage.setItem('rota_' + SETOR, JSON.stringify(rota));
+
                 try {
-                    const resposta = await fetch(`/rota/${SETOR}`, {
+                    fetch(`/rota/${SETOR}`, {
                         method:  "POST",
                         headers: { "Content-Type": "application/json" },
                         body:    JSON.stringify({ rota: rota }),
+                    }).then(res => {
+                        if (res.ok) mostrarFeedback("✅ Rota logística gravada com sucesso!", "ok");
+                        else mostrarFeedback("❌ Erro ao sincronizar com servidor.", "erro");
                     });
-
-                    if (resposta.ok) {
-                        mostrarFeedback("✅ Rota logística sincronizada com sucesso! (" + rota.length + " paragens)", "ok");
-                    } else {
-                        mostrarFeedback("❌ Falha de sincronização. Tente novamente.", "erro");
-                    }
                 } catch (e) {
-                    mostrarFeedback("❌ Sem comunicação com o servidor principal.", "erro");
+                    mostrarFeedback("✅ Salvo localmente, mas sem conexão com o servidor.", "ok");
                 }
             }
 
@@ -373,15 +338,24 @@
                 const el = document.getElementById("rotaFeedback");
                 el.textContent = msg;
                 el.className   = "rota-feedback " + (tipo === "ok" ? "feedback-ok" : "feedback-erro");
-                setTimeout(() => {
-                    el.textContent = "";
-                    el.className   = "rota-feedback";
-                }, 4000);
+                setTimeout(() => { el.textContent = ""; el.className = "rota-feedback"; }, 4000);
             }
 
-            // Exportação das funções para o escopo global do Window
+            // 3. A CARTADA FINAL: Captura a ordem da tela no momento em que envia o PDF
+            function prepararEnvio() {
+                const itens = document.querySelectorAll(".rota-item");
+                const rota  = [...itens].map(item => item.dataset.loja);
+                document.getElementById("rotaLocalInput").value = JSON.stringify(rota);
+            }
+
             window.salvarRota    = salvarRota;
             window.removerDaRota = removerDaRota;
+            window.prepararEnvio = prepararEnvio;
+        } else {
+            // Produção Centralizada não processa rotas, manda lista vazia
+            window.prepararEnvio = function() {
+                document.getElementById("rotaLocalInput").value = "[]";
+            }
         }
     </script>
 </body>
