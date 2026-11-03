@@ -32,7 +32,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 POSICAO_X = 130
-POSICAO_Y = 210
+POSICAO_Y = 205
 
 USUARIOS = {
     "producao":   "prod2026",
