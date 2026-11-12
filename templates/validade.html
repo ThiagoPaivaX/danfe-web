@@ -3,152 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etiquetas de Validade - {{ nome_setor }}</title>
-    <!-- Importação do estilo visual -->
+    <title>Etiquetas de Fabricação e Validade - {{ nome_setor }}</title>
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Importação da biblioteca PDF.js para leitura do texto dentro dos PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 
-<!-- O atributo data-setor é usado pelo CSS para carregar o tema/cores correspondente -->
 <body data-setor="{{ setor }}">
 
     <main class="caixa">
 
-        <!-- CABEÇALHO DA APLICAÇÃO -->
+        <!-- CABEÇALHO -->
         <section class="topo">
             <div class="setor-icone">🏷️</div>
-            <h1>Etiquetas de Validade</h1>
-            <p class="setor-desc">Adiciona a data de validade na etiqueta do SAP e gera o arquivo ZPL pra mandar direto pra Zebra.</p>
+            <h1>Etiquetas de Fabricação e Validade</h1>
+            <p class="setor-desc">Adicione as datas de fabricação (FAB) e validade (VAL) na etiqueta do SAP e gere o arquivo ZPL pronto para a Zebra.</p>
 
             <div class="topo-acoes">
-                <a href="/setor/{{ setor }}" class="btn-tutorial">⬅ Voltar</a>
+                <a href="/setor/{{ setor }}" class="btn-tutorial">⬅ Voltar ao Setor</a>
                 <a href="/" class="btn-sair">Sair</a>
             </div>
         </section>
 
-        <!-- PASSO 1: ÁREA DE UPLOAD -->
+        <!-- PASSO 1: UPLOAD DO PDF -->
         <section class="card">
-            <h2>1. PDF da etiqueta (SAP)</h2>
-            <p class="texto">Use o PDF que o SAP gera (ele guarda o código ZPL da etiqueta). O arquivo não sai do seu navegador.</p>
-            <label class="area-upload">
-                <span id="fileLabel">Escolha o arquivo PDF</span>
-                <!-- Apenas ficheiros PDF são aceites -->
+            <div class="card-header-badge">
+                <span class="step-badge">Passo 1</span>
+                <h2>PDF da etiqueta (SAP)</h2>
+            </div>
+            <p class="texto">Selecione o PDF exportado pelo SAP contendo o código ZPL. Todo o processamento ocorre localmente no seu navegador.</p>
+            
+            <label class="area-upload" id="uploadArea">
+                <span class="upload-icon">📄</span>
+                <span id="fileLabel">Clique ou arraste o arquivo PDF da etiqueta</span>
+                <small class="upload-hint">Formato suportado: .pdf (ZPL embutido)</small>
                 <input type="file" id="fileInput" accept="application/pdf">
             </label>
         </section>
 
-        <!-- PASSO 2: PRÉ-VISUALIZAÇÃO (Fica oculto até o PDF ser carregado) -->
+        <!-- PASSO 2: PRÉ-VISUALIZAÇÃO INTERATIVA -->
         <section class="card" id="previewCard" style="display:none;">
-            <h2>2. Clique onde a validade deve aparecer</h2>
-            <p class="texto">Prévia da etiqueta em tamanho proporcional (104 x 150 mm). A posição vale para todas as etiquetas do arquivo.</p>
-            <div style="overflow-x:auto; border:1px dashed rgba(255,255,255,0.2); border-radius:10px; padding:8px; text-align:center;">
-                <!-- O elemento Canvas onde a etiqueta será desenhada -->
-                <canvas id="pdfCanvas" style="display:block; max-width:100%; height:auto; cursor:crosshair;"></canvas>
+            <div class="card-header-badge">
+                <span class="step-badge">Passo 2</span>
+                <h2>Posicione as datas na etiqueta</h2>
+            </div>
+            <p class="texto">Escolha qual campo deseja posicionar e clique diretamente sobre a prévia (escala real 104 × 150 mm).</p>
+
+            <div class="target-selector">
+                <button type="button" id="targetFabBtn" class="target-btn active-fab">
+                    <span class="dot dot-fab"></span> Posicionar Fabricação (FAB)
+                </button>
+                <button type="button" id="targetValBtn" class="target-btn">
+                    <span class="dot dot-val"></span> Posicionar Validade (VAL)
+                </button>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="pdfCanvas"></canvas>
             </div>
         </section>
 
-        <!-- PASSO 3: CONFIGURAÇÕES E DADOS (Fica oculto até o PDF ser carregado) -->
+        <!-- PASSO 3: CONFIGURAÇÕES DAS DATAS -->
         <section class="card" id="settingsCard" style="display:none;">
-            <h2>3. Dados da validade</h2>
-            <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; margin-top:10px;">
-                <!-- Campo: Data de Validade -->
-                <div class="campo" style="flex:1; min-width:150px;">
-                    <label for="dateInput">Data de validade</label>
-                    <input type="date" id="dateInput">
+            <div class="card-header-badge">
+                <span class="step-badge">Passo 3</span>
+                <h2>Configuração das datas e impressão</h2>
+            </div>
+
+            <!-- BLOCO FABRICAÇÃO -->
+            <div class="date-block fab-block" id="fabBlock">
+                <div class="date-block-header">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="useFabCheck" checked>
+                        <span class="dot dot-fab"></span>
+                        <strong>Incluir Data de Fabricação (FAB)</strong>
+                    </label>
                 </div>
-                <!-- Campo: Prefixo (ex: VAL:) -->
-                <div class="campo" style="flex:1; min-width:150px;">
-                    <label for="prefixInput">Texto antes da data</label>
-                    <input type="text" id="prefixInput" value="VAL:">
-                </div>
-                <!-- Campo: Tamanho da fonte -->
-                <div class="campo" style="max-width:110px;">
-                    <label for="sizeInput">Fonte (mm)</label>
-                    <input type="number" id="sizeInput" value="4.5" min="2" max="12" step="0.5">
-                </div>
-                <!-- Campo: Quantidade de etiquetas a imprimir -->
-                <div class="campo" style="max-width:110px;">
-                    <label for="qtdInput">Quantidade</label>
-                    <input type="number" id="qtdInput" value="1" min="1" step="1">
-                </div>
-                <!-- Campos X e Y: São preenchidos automaticamente ao clicar no canvas -->
-                <div class="campo" style="max-width:110px;">
-                    <label for="xInput">X (mm)</label>
-                    <input type="number" id="xInput" min="0" max="104" step="1">
-                </div>
-                <div class="campo" style="max-width:110px;">
-                    <label for="yInput">Y (mm)</label>
-                    <input type="number" id="yInput" min="0" max="150" step="1">
+                <div id="fabFieldsGroup" class="date-block-grid">
+                    <div class="campo">
+                        <label for="fabDateInput">Data de fabricação</label>
+                        <input type="date" id="fabDateInput">
+                    </div>
+                    <div class="campo">
+                        <label for="fabPrefixInput">Prefixo</label>
+                        <input type="text" id="fabPrefixInput" value="FAB:">
+                    </div>
+                    <div class="campo campo-coord">
+                        <label for="fabXInput">X (mm)</label>
+                        <input type="number" id="fabXInput" min="0" max="104" step="1" placeholder="--">
+                    </div>
+                    <div class="campo campo-coord">
+                        <label for="fabYInput">Y (mm)</label>
+                        <input type="number" id="fabYInput" min="0" max="150" step="1" placeholder="--">
+                    </div>
                 </div>
             </div>
 
-            <!-- BOTÕES DE AÇÃO -->
-            <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
-                <button id="genBtn" disabled>Gerar PDF com validade</button>
-                <button id="resetBtn" type="button" style="background:#374151;">Trocar arquivo</button>
+            <!-- BLOCO VALIDADE -->
+            <div class="date-block val-block" id="valBlock">
+                <div class="date-block-header">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="useValCheck" checked>
+                        <span class="dot dot-val"></span>
+                        <strong>Incluir Data de Validade (VAL)</strong>
+                    </label>
+                    <div class="quick-days" title="Somar dias a partir da data de fabricação">
+                        <span>Prazo rápido:</span>
+                        <button type="button" class="chip-day" data-days="7">+7d</button>
+                        <button type="button" class="chip-day" data-days="15">+15d</button>
+                        <button type="button" class="chip-day" data-days="30">+30d</button>
+                        <button type="button" class="chip-day" data-days="60">+60d</button>
+                        <button type="button" class="chip-day" data-days="90">+90d</button>
+                        <button type="button" class="chip-day" data-days="180">+180d</button>
+                    </div>
+                </div>
+                <div id="valFieldsGroup" class="date-block-grid">
+                    <div class="campo">
+                        <label for="valDateInput">Data de validade</label>
+                        <input type="date" id="valDateInput">
+                    </div>
+                    <div class="campo">
+                        <label for="valPrefixInput">Prefixo</label>
+                        <input type="text" id="valPrefixInput" value="VAL:">
+                    </div>
+                    <div class="campo campo-coord">
+                        <label for="valXInput">X (mm)</label>
+                        <input type="number" id="valXInput" min="0" max="104" step="1" placeholder="--">
+                    </div>
+                    <div class="campo campo-coord">
+                        <label for="valYInput">Y (mm)</label>
+                        <input type="number" id="valYInput" min="0" max="150" step="1" placeholder="--">
+                    </div>
+                </div>
             </div>
-            <!-- Feedback de status (sucesso ou erro) -->
-            <div id="status" style="margin-top:10px; font-size:14px;"></div>
+
+            <!-- PARÂMETROS GERAIS -->
+            <div class="general-settings-grid">
+                <div class="campo">
+                    <label for="sizeInput">Tamanho da fonte (mm)</label>
+                    <input type="number" id="sizeInput" value="4.5" min="2" max="12" step="0.5">
+                </div>
+                <div class="campo">
+                    <label for="qtdInput">Cópias por etiqueta</label>
+                    <input type="number" id="qtdInput" value="1" min="1" step="1">
+                </div>
+            </div>
+
+            <!-- AÇÕES -->
+            <div class="action-row">
+                <button id="genBtn" disabled>⬇️ Gerar Arquivo ZPL</button>
+                <button id="resetBtn" type="button" class="btn-secondary">🔄 Trocar PDF</button>
+            </div>
+
+            <div id="status" class="status-msg"></div>
         </section>
 
         <footer>
-            <p>© 2026 - Projeto feito por Thiago Paiva</p>
+            <p>© 2026 - Desenvolvido por Thiago Paiva</p>
         </footer>
 
     </main>
 
     <script>
     (function(){
-        // Configuração do Web Worker do PDF.js (essencial para não travar a UI durante a leitura)
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
-        // CONFIGURAÇÕES DA ETIQUETA E PROPORÇÃO
-        // Tamanho físico da etiqueta: 104mm x 150mm.
-        // PX_POR_MM é usado apenas para ampliar o Canvas no navegador (escala visual)
         const LARGURA_MM = 104;
         const COMPRIMENTO_MM = 150;
         const PX_POR_MM = 4;
 
-        // Referências aos elementos do DOM (HTML)
         const fileInput = document.getElementById('fileInput');
         const fileLabel = document.getElementById('fileLabel');
+        const uploadArea = document.getElementById('uploadArea');
         const previewCard = document.getElementById('previewCard');
         const settingsCard = document.getElementById('settingsCard');
         const canvas = document.getElementById('pdfCanvas');
         const ctx = canvas.getContext('2d');
-        const dateInput = document.getElementById('dateInput');
-        const prefixInput = document.getElementById('prefixInput');
+
+        const targetFabBtn = document.getElementById('targetFabBtn');
+        const targetValBtn = document.getElementById('targetValBtn');
+
+        const useFabCheck = document.getElementById('useFabCheck');
+        const fabFieldsGroup = document.getElementById('fabFieldsGroup');
+        const fabDateInput = document.getElementById('fabDateInput');
+        const fabPrefixInput = document.getElementById('fabPrefixInput');
+        const fabXInput = document.getElementById('fabXInput');
+        const fabYInput = document.getElementById('fabYInput');
+
+        const useValCheck = document.getElementById('useValCheck');
+        const valFieldsGroup = document.getElementById('valFieldsGroup');
+        const valDateInput = document.getElementById('valDateInput');
+        const valPrefixInput = document.getElementById('valPrefixInput');
+        const valXInput = document.getElementById('valXInput');
+        const valYInput = document.getElementById('valYInput');
+
         const sizeInput = document.getElementById('sizeInput');
-        const qtdInput = document.getElementById('qtdInput'); 
-        const xInput = document.getElementById('xInput');
-        const yInput = document.getElementById('yInput');
+        const qtdInput = document.getElementById('qtdInput');
         const genBtn = document.getElementById('genBtn');
         const resetBtn = document.getElementById('resetBtn');
         const statusEl = document.getElementById('status');
 
-        // Variáveis de estado global
-        let zplOriginal = ''; // Guarda o código extraído do PDF
-        let fileName = 'etiqueta'; // Nome do ficheiro a ser gerado
+        let zplOriginal = '';
+        let fileName = 'etiqueta';
+        let alvoAtivo = 'fab';
 
-        // Inicialização do tamanho do Canvas
         canvas.width = LARGURA_MM * PX_POR_MM;
         canvas.height = COMPRIMENTO_MM * PX_POR_MM;
 
-        // Define a data atual no input de data por padrão
-        dateInput.value = new Date().toISOString().slice(0,10);
+        function obterDataHojeISO() {
+            const agora = new Date();
+            const y = agora.getFullYear();
+            const m = String(agora.getMonth() + 1).padStart(2, '0');
+            const d = String(agora.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
 
-        // Tenta recuperar preferências salvas anteriormente (Local Storage)
+        function somarDiasISO(dataISO, dias) {
+            if (!dataISO) return '';
+            const [y, m, d] = dataISO.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            dt.setDate(dt.getDate() + dias);
+            const yy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}`;
+        }
+
+        const hojeISO = obterDataHojeISO();
+        fabDateInput.value = hojeISO;
+        valDateInput.value = hojeISO;
+
         try {
             const s = JSON.parse(localStorage.getItem('etiquetaValidadeZplProducao') || '{}');
-            if (s.prefix) prefixInput.value = s.prefix;
+            if (s.prefixFab) fabPrefixInput.value = s.prefixFab;
+            if (s.prefixVal || s.prefix) valPrefixInput.value = s.prefixVal || s.prefix;
             if (s.size) sizeInput.value = s.size;
         } catch(e) {}
 
-        /**
-         * LÊ O PDF E EXTRAI O TEXTO BRUTO (ZPL)
-         * O SAP guarda o código ZPL como texto no PDF. Esta função junta os pedaços.
-         */
+        function definirAlvo(alvo) {
+            alvoAtivo = alvo;
+            targetFabBtn.classList.toggle('active-fab', alvo === 'fab');
+            targetValBtn.classList.toggle('active-val', alvo === 'val');
+        }
+
+        targetFabBtn.addEventListener('click', () => {
+            useFabCheck.checked = true;
+            fabFieldsGroup.classList.remove('disabled-group');
+            definirAlvo('fab');
+            atualizarBotao();
+        });
+
+        targetValBtn.addEventListener('click', () => {
+            useValCheck.checked = true;
+            valFieldsGroup.classList.remove('disabled-group');
+            definirAlvo('val');
+            atualizarBotao();
+        });
+
+        document.querySelectorAll('.chip-day').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dias = parseInt(btn.dataset.days, 10);
+                const base = fabDateInput.value || obterDataHojeISO();
+                valDateInput.value = somarDiasISO(base, dias);
+                useValCheck.checked = true;
+                valFieldsGroup.classList.remove('disabled-group');
+                if (zplOriginal) desenharPrevia();
+                atualizarBotao();
+            });
+        });
+
         async function extrairZplDoPdf(bytes) {
             const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
             let zpl = '';
@@ -160,61 +282,63 @@
             return zpl;
         }
 
-        /**
-         * ANALISA O CÓDIGO ZPL PARA DESENHAR A PRÉVIA
-         * Lê os comandos ^FO (posição) e ^FD (dados) da primeira etiqueta
-         */
         function lerCampos(zpl) {
-            const primeira = zpl.split('^XZ')[0]; // Isola apenas a primeira etiqueta
+            const primeira = zpl.split('^XZ')[0];
             const campos = [];
             primeira.split('^FO').slice(1).forEach(trecho => {
-                const pos = trecho.match(/^([\d.]+),([\d.]+)/); // Pega coordenadas X, Y
-                const dado = trecho.match(/\^FD([\s\S]*?)\^FS/); // Pega o texto do campo
+                const pos = trecho.match(/^([\d.]+),([\d.]+)/);
+                const dado = trecho.match(/\^FD([\s\S]*?)\^FS/);
                 if (!pos || !dado) return;
-                
+
                 const x = parseFloat(pos[1]), y = parseFloat(pos[2]);
                 const fonte = trecho.match(/\^A0N,([\d.]+)/);
                 const barra = trecho.match(/\^BC[A-Z]?,([\d.]+)/);
-                
+
                 if (barra) campos.push({ tipo: 'barra', x, y, h: parseFloat(barra[1]), texto: dado[1] });
                 else if (fonte && dado[1].trim()) campos.push({ tipo: 'texto', x, y, h: parseFloat(fonte[1]), texto: dado[1] });
             });
             return campos;
         }
 
-        /**
-         * FORMATA A DATA E O PREFIXO PARA O PADRÃO ZPL
-         * Remove acentos e caracteres especiais que quebram o código ZPL (^, ~, \)
-         */
-        function textoValidade() {
-            const [y, m, d] = dateInput.value.split('-');
+        function formatarTextoZpl(prefixo, dataISO) {
+            const [y, m, d] = (dataISO || '').split('-');
             const dataFmt = (d && m && y) ? `${d}/${m}/${y}` : '';
-            const limpo = `${prefixInput.value} ${dataFmt}`
+            return `${prefixo} ${dataFmt}`
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^ -~]/g, '').replace(/[\^~\\]/g, '').trim();
-            return limpo;
         }
 
-        /**
-         * DESENHA A ETIQUETA E O NOVO CAMPO NO CANVAS
-         */
         function desenharPrevia() {
-            // Limpa o canvas com fundo branco e borda tracejada
+            // Fundo branco da etiqueta térmica
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#999';
-            ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+
+            // Grade sutil a cada 10mm para auxiliar no alinhamento
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+            ctx.lineWidth = 1;
+            for (let mm = 10; mm < LARGURA_MM; mm += 10) {
+                ctx.beginPath();
+                ctx.moveTo(mm * PX_POR_MM, 0);
+                ctx.lineTo(mm * PX_POR_MM, canvas.height);
+                ctx.stroke();
+            }
+            for (let mm = 10; mm < COMPRIMENTO_MM; mm += 10) {
+                ctx.beginPath();
+                ctx.moveTo(0, mm * PX_POR_MM);
+                ctx.lineTo(canvas.width, mm * PX_POR_MM);
+                ctx.stroke();
+            }
+
             ctx.textBaseline = 'top';
 
-            // Desenha os elementos originais lidos do ZPL
+            // Campos originais do SAP
             lerCampos(zplOriginal).forEach(c => {
                 if (c.tipo === 'texto') {
-                    ctx.fillStyle = '#111';
+                    ctx.fillStyle = '#0f172a';
                     ctx.font = `${c.h * PX_POR_MM}px Arial`;
                     ctx.fillText(c.texto, c.x * PX_POR_MM, c.y * PX_POR_MM);
                 } else {
-                    // Desenha um retângulo genérico para simular o código de barras na prévia
-                    ctx.fillStyle = '#333';
+                    ctx.fillStyle = '#1e293b';
                     const largura = 28 * PX_POR_MM;
                     for (let i = 0; i < largura; i += 4) {
                         ctx.fillRect(c.x * PX_POR_MM + i, c.y * PX_POR_MM, (i % 8 === 0) ? 2 : 1, c.h * PX_POR_MM);
@@ -224,138 +348,200 @@
                 }
             });
 
-            // Desenha o novo texto de VALIDADE na posição escolhida a vermelho
-            const x = parseFloat(xInput.value), y = parseFloat(yInput.value);
-            if (!isNaN(x) && !isNaN(y)) {
-                const h = parseFloat(sizeInput.value) || 4.5;
-                ctx.fillStyle = 'rgba(220,38,38,0.95)';
-                ctx.font = `${h * PX_POR_MM}px Arial`;
-                ctx.fillText(textoValidade(), x * PX_POR_MM, y * PX_POR_MM);
+            const h = parseFloat(sizeInput.value) || 4.5;
+            ctx.font = `bold ${h * PX_POR_MM}px Arial`;
+
+            // Desenha FAB (Azul)
+            if (useFabCheck.checked) {
+                const fx = parseFloat(fabXInput.value), fy = parseFloat(fabYInput.value);
+                if (!isNaN(fx) && !isNaN(fy)) {
+                    const px = fx * PX_POR_MM;
+                    const py = fy * PX_POR_MM;
+                    ctx.fillStyle = '#2563eb';
+                    ctx.fillText(formatarTextoZpl(fabPrefixInput.value, fabDateInput.value), px, py);
+                    // Ponto de ancoragem
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Desenha VAL (Vermelho)
+            if (useValCheck.checked) {
+                const vx = parseFloat(valXInput.value), vy = parseFloat(valYInput.value);
+                if (!isNaN(vx) && !isNaN(vy)) {
+                    const px = vx * PX_POR_MM;
+                    const py = vy * PX_POR_MM;
+                    ctx.fillStyle = '#dc2626';
+                    ctx.fillText(formatarTextoZpl(valPrefixInput.value, valDateInput.value), px, py);
+                    // Ponto de ancoragem
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
 
-        // Habilita/desabilita o botão de gerar dependendo do preenchimento dos campos X e Y
         function atualizarBotao() {
-            genBtn.disabled = !(zplOriginal && xInput.value !== '' && yInput.value !== '');
+            if (!zplOriginal) {
+                genBtn.disabled = true;
+                return;
+            }
+            const fabOk = useFabCheck.checked && fabXInput.value !== '' && fabYInput.value !== '';
+            const valOk = useValCheck.checked && valXInput.value !== '' && valYInput.value !== '';
+            const algumAtivo = useFabCheck.checked || useValCheck.checked;
+
+            const fabPendente = useFabCheck.checked && (fabXInput.value === '' || fabYInput.value === '');
+            const valPendente = useValCheck.checked && (valXInput.value === '' || valYInput.value === '');
+
+            genBtn.disabled = !(algumAtivo && (fabOk || valOk) && !fabPendente && !valPendente);
         }
 
-        /**
-         * EVENTO: UPLOAD DO ARQUIVO
-         */
+        useFabCheck.addEventListener('change', () => {
+            fabFieldsGroup.classList.toggle('disabled-group', !useFabCheck.checked);
+            if (!useFabCheck.checked && useValCheck.checked) definirAlvo('val');
+            if (zplOriginal) desenharPrevia();
+            atualizarBotao();
+        });
+
+        useValCheck.addEventListener('change', () => {
+            valFieldsGroup.classList.toggle('disabled-group', !useValCheck.checked);
+            if (!useValCheck.checked && useFabCheck.checked) definirAlvo('fab');
+            if (zplOriginal) desenharPrevia();
+            atualizarBotao();
+        });
+
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            
+
             fileName = file.name.replace(/\.pdf$/i, '');
             fileLabel.textContent = file.name;
-            statusEl.style.color = '';
+            uploadArea.classList.add('has-file');
+            statusEl.className = 'status-msg';
             statusEl.textContent = '';
-            
+
             try {
-                // Lê o PDF como ArrayBuffer e envia para extração
                 const zpl = await extrairZplDoPdf(new Uint8Array(await file.arrayBuffer()));
-                
-                // Valida se o documento extraído realmente possui comandos ZPL
+
                 if (!zpl.includes('^XA') || !zpl.includes('^XZ')) {
-                    throw new Error('não encontrei o código ZPL da etiqueta nesse PDF.');
+                    throw new Error('Não encontrei o código ZPL da etiqueta nesse PDF.');
                 }
-                
+
                 zplOriginal = zpl;
-                xInput.value = '';
-                yInput.value = '';
-                
+                fabXInput.value = '';
+                fabYInput.value = '';
+                valXInput.value = '';
+                valYInput.value = '';
+                definirAlvo(useFabCheck.checked ? 'fab' : 'val');
+
                 desenharPrevia();
                 previewCard.style.display = 'block';
                 settingsCard.style.display = 'block';
                 atualizarBotao();
             } catch (err) {
-                // Tratamento de erro (formato inválido, PDF corrompido, etc.)
                 zplOriginal = '';
                 previewCard.style.display = 'none';
                 settingsCard.style.display = 'block';
-                statusEl.style.color = '#f87171';
+                statusEl.className = 'status-msg status-erro';
                 statusEl.textContent = 'Erro ao ler o PDF: ' + err.message;
                 atualizarBotao();
             }
         });
 
-        /**
-         * EVENTO: CLIQUE NO CANVAS PARA POSICIONAR
-         * Converte as coordenadas do clique no navegador para milímetros reais
-         */
         canvas.addEventListener('click', (e) => {
             if (!zplOriginal) return;
             const rect = canvas.getBoundingClientRect();
-            const xMm = (e.clientX - rect.left) * (canvas.width / rect.width) / PX_POR_MM;
-            const yMm = (e.clientY - rect.top) * (canvas.height / rect.height) / PX_POR_MM;
-            
-            xInput.value = Math.round(xMm);
-            yInput.value = Math.round(yMm);
-            
+            const xMm = Math.round((e.clientX - rect.left) * (canvas.width / rect.width) / PX_POR_MM);
+            const yMm = Math.round((e.clientY - rect.top) * (canvas.height / rect.height) / PX_POR_MM);
+
+            if (alvoAtivo === 'fab' && useFabCheck.checked) {
+                fabXInput.value = xMm;
+                fabYInput.value = yMm;
+                if (useValCheck.checked && valXInput.value === '') {
+                    definirAlvo('val');
+                }
+            } else if (alvoAtivo === 'val' && useValCheck.checked) {
+                valXInput.value = xMm;
+                valYInput.value = yMm;
+                if (useFabCheck.checked && fabXInput.value === '') {
+                    definirAlvo('fab');
+                }
+            }
+
             desenharPrevia();
             atualizarBotao();
         });
 
-        // Adiciona listeners para redesenhar a prévia quando os campos mudam
-        [dateInput, prefixInput, sizeInput, qtdInput, xInput, yInput].forEach(el => {
+        [
+            fabDateInput, fabPrefixInput, fabXInput, fabYInput,
+            valDateInput, valPrefixInput, valXInput, valYInput,
+            sizeInput, qtdInput
+        ].forEach(el => {
             el.addEventListener('input', () => {
                 if (zplOriginal && el.id !== 'qtdInput') desenharPrevia();
                 atualizarBotao();
             });
         });
 
-        // Botão para limpar e inserir novo ficheiro
         resetBtn.addEventListener('click', () => {
             fileInput.value = '';
             zplOriginal = '';
-            fileLabel.textContent = 'Escolha o arquivo PDF';
+            fileLabel.textContent = 'Clique ou arraste o arquivo PDF da etiqueta';
+            uploadArea.classList.remove('has-file');
             previewCard.style.display = 'none';
             settingsCard.style.display = 'none';
+            statusEl.className = 'status-msg';
             statusEl.textContent = '';
         });
 
-        /**
-         * EVENTO: GERAR O FICHEIRO ZPL FINAL
-         * Compila o ZPL original com as injeções e força o download
-         */
         genBtn.addEventListener('click', () => {
-            if (!zplOriginal || xInput.value === '' || yInput.value === '') {
-                statusEl.style.color = '#f87171';
-                statusEl.textContent = 'Selecione um arquivo e marque a posição da data.';
-                return;
-            }
+            if (!zplOriginal) return;
+
             try {
-                // Guarda preferências do utilizador para uso futuro
                 try {
                     localStorage.setItem('etiquetaValidadeZplProducao', JSON.stringify({
-                        prefix: prefixInput.value, size: sizeInput.value
+                        prefixFab: fabPrefixInput.value,
+                        prefixVal: valPrefixInput.value,
+                        size: sizeInput.value
                     }));
                 } catch(e) {}
 
-                const x = Math.round(parseFloat(xInput.value));
-                const y = Math.round(parseFloat(yInput.value));
                 const h = parseFloat(sizeInput.value) || 4.5;
-                const texto = textoValidade();
-                
-                // Lê a quantidade e prepara o comando de impressão em lote (^PQ)
+                const blocosNovos = [];
+
+                if (useFabCheck.checked && fabXInput.value !== '' && fabYInput.value !== '') {
+                    const fx = Math.round(parseFloat(fabXInput.value));
+                    const fy = Math.round(parseFloat(fabYInput.value));
+                    const textoFab = formatarTextoZpl(fabPrefixInput.value, fabDateInput.value);
+                    blocosNovos.push(`^FO${fx},${fy}^A0N,${h},${h}^FH\\^FD${textoFab}^FS`);
+                }
+
+                if (useValCheck.checked && valXInput.value !== '' && valYInput.value !== '') {
+                    const vx = Math.round(parseFloat(valXInput.value));
+                    const vy = Math.round(parseFloat(valYInput.value));
+                    const textoVal = formatarTextoZpl(valPrefixInput.value, valDateInput.value);
+                    blocosNovos.push(`^FO${vx},${vy}^A0N,${h},${h}^FH\\^FD${textoVal}^FS`);
+                }
+
+                if (blocosNovos.length === 0) {
+                    statusEl.className = 'status-msg status-erro';
+                    statusEl.textContent = 'Marque pelo menos uma posição na etiqueta antes de gerar.';
+                    return;
+                }
+
                 const qt = parseInt(qtdInput.value) || 1;
                 const comandoQtd = qt > 1 ? `\n^PQ${qt}` : '';
+                const injecaoZpl = '\n' + blocosNovos.join('\n') + comandoQtd;
 
-                // Constrói o novo bloco ZPL seguindo o mesmo estilo dos campos originais do SAP
-                const campoData = `^FO${x},${y}^A0N,${h},${h}^FH\\^FD${texto}^FS${comandoQtd}`;
-
-                // Divide o arquivo pelas tags de fecho (^XZ)
                 const partes = zplOriginal.split('^XZ');
-                const qtd = partes.length - 1;
-                
-                // Reconstrói o ficheiro injetando o novo campo no final de cada etiqueta
+                const qtdEtiquetas = partes.length - 1;
+
                 const zplFinal = partes.slice(0, -1).map(p => {
-                    // Remove qualquer comando de quantidade original para não gerar impressões a mais
                     let trecho = p.replace(/\^PQ\d+/gi, '');
-                    return trecho + campoData + '\n^XZ\n';
+                    return trecho + injecaoZpl + '\n^XZ\n';
                 }).join('') + partes[partes.length - 1];
 
-                // Gera o Blob e força o download pelo navegador
                 const blob = new Blob([zplFinal], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -364,14 +550,13 @@
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                
-                // Limpa a URL da memória após 5 segundos
+
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-                statusEl.style.color = '#4ade80';
-                statusEl.textContent = `Pronto! ${qtd} etiqueta(s) processada(s) com ${qt} cópia(s) cada. Envie o .zpl pra Zebra.`;
+                statusEl.className = 'status-msg status-ok';
+                statusEl.textContent = `✅ Pronto! ${qtdEtiquetas} etiqueta(s) processada(s) com ${qt} cópia(s) cada. Envie o .zpl para a Zebra.`;
             } catch (err) {
-                statusEl.style.color = '#f87171';
+                statusEl.className = 'status-msg status-erro';
                 statusEl.textContent = 'Erro ao gerar o arquivo: ' + err.message;
             }
         });
