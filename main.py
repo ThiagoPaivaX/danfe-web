@@ -102,6 +102,7 @@ LOJAS = {
     "BENEDITO CALIXTO":           "45",
     "MAJOR HIPOLITO":             "46",
     "VICENTE JOSE PARISE":        "47",
+    "ADOUTOR ADHEMAR DE BARRO":   "48",
     "RUA CARLOS PULICI":          "49",
 }
 
