@@ -251,6 +251,12 @@ async def pagina_validade(request: Request, setor: str):
         raise HTTPException(status_code=404, detail="Página não encontrada.")
     return templates.TemplateResponse(request=request, name="validade.html", context={"setor": setor, "nome_setor": NOMES_SETORES[setor]})
 
+@app.get("/setor/{setor}/etiquetas-manipulacao")
+async def pagina_etiquetas_manipulacao(request: Request, setor: str):
+    if setor != "producao":
+        raise HTTPException(status_code=404, detail="Página não encontrada.")
+    return templates.TemplateResponse(request=request, name="etiquetas_manipulacao.html", context={"setor": setor, "nome_setor": NOMES_SETORES[setor]})
+
 @app.post("/upload/{setor}")
 async def upload_pdf(
     setor: str, 
