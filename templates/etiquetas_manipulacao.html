@@ -15,7 +15,7 @@
         <section class="topo">
             <div class="setor-icone">📋</div>
             <h1>Etiquetas de Abertura / Manipulação</h1>
-            <p class="setor-desc">Escolha o modelo da etiqueta, preencha os dados (ou deixe em branco para preencher à mão) e gere o arquivo .ZPL para a Zebra.</p>
+            <p class="setor-desc">Escolha qual etiqueta deseja imprimir para preenchimento manual (104 x 150 mm) e gere o arquivo .ZPL para a Zebra.</p>
 
             <div class="topo-acoes">
                 <a href="/setor/{{ setor }}" class="btn-tutorial">⬅ Voltar</a>
@@ -23,115 +23,38 @@
             </div>
         </section>
 
-        <!-- PASSO 1: ESCOLHA DO MODELO E PREENCHIMENTO -->
+        <!-- PASSO 1: ESCOLHA DA ETIQUETA E QUANTIDADE -->
         <section class="card">
-            <h2>1. Escolha o modelo e preencha os campos</h2>
-            <p class="texto">Selecione qual etiqueta deseja imprimir. Campos que você deixar em branco saem com linha/pontilhado para escrita manual na etiqueta.</p>
+            <h2>1. Escolha a etiqueta para imprimir</h2>
+            <p class="texto">Selecione apenas a etiqueta que você quer imprimir (104 x 150 mm) para preenchimento manual.</p>
 
-            <!-- SELETOR DO MODELO -->
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
-                <button type="button" id="btnModelo1" style="width:auto; padding:10px 16px; font-size:13px; background:#2563eb;">
-                    Modelo 1: Abertura / Transferência (Completo)
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+                <button type="button" id="btnModelo1" style="flex:1; min-width:240px; padding:12px 16px; font-size:14px; background:#2563eb;">
+                    Etiqueta 1 (Apenas esta)
                 </button>
-                <button type="button" id="btnModelo2" style="width:auto; padding:10px 16px; font-size:13px; background:#374151;">
-                    Modelo 2: Abertura com Hora
+                <button type="button" id="btnModelo2" style="flex:1; min-width:240px; padding:12px 16px; font-size:14px; background:#374151;">
+                    Etiqueta 2 (Apenas esta)
                 </button>
             </div>
 
-            <!-- CAMPOS COMUNS AOS DOIS MODELOS -->
-            <div style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:14px;">
-                <div class="campo" style="flex:2; min-width:220px;">
-                    <label for="produtoInput">PRODUTO:</label>
-                    <input type="text" id="produtoInput" placeholder="Ex: MOLHO DE TOMATE">
-                </div>
-                <div class="campo" style="flex:1; min-width:160px;">
-                    <label for="responsavelInput">RESPONSÁVEL:</label>
-                    <input type="text" id="responsavelInput" placeholder="Nome do responsável">
-                </div>
-            </div>
-
-            <!-- CAMPOS EXCLUSIVOS DO MODELO 1 -->
-            <div id="camposModelo1" style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:14px; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
-                <div class="campo" style="flex:1; min-width:180px;">
-                    <label for="marcaInput">MARCA / FABRICANTE:</label>
-                    <input type="text" id="marcaInput" placeholder="Ex: HEINZ">
-                </div>
-                <div class="campo" style="flex:1; min-width:160px;">
-                    <label for="loteInput">LOTE ORIGINAL:</label>
-                    <input type="text" id="loteInput" placeholder="Ex: L2026-09">
-                </div>
-                <div class="campo" style="min-width:150px;">
-                    <label for="aberturaM1Input">DATA DE ABERTURA / TRANSFERÊNCIA:</label>
-                    <input type="date" id="aberturaM1Input">
-                </div>
-                <div class="campo" style="min-width:150px;">
-                    <label for="valOriginalInput">VALIDADE ORIGINAL:</label>
-                    <input type="date" id="valOriginalInput">
-                </div>
-                <div class="campo" style="min-width:150px;">
-                    <label for="novaValM1Input">NOVA VALIDADE (após aberto):</label>
-                    <input type="date" id="novaValM1Input">
-                </div>
-            </div>
-
-            <!-- CAMPOS EXCLUSIVOS DO MODELO 2 -->
-            <div id="camposModelo2" style="display:none; flex-wrap:wrap; gap:14px; margin-bottom:14px; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
-                <div class="campo" style="min-width:155px;">
-                    <label for="aberturaM2Input">DATA DE ABERTURA:</label>
-                    <input type="date" id="aberturaM2Input">
-                </div>
-                <div class="campo" style="max-width:120px;">
-                    <label for="horaM2Input">HORA (____:____h):</label>
-                    <input type="time" id="horaM2Input">
-                </div>
-                <div class="campo" style="min-width:165px;">
-                    <label for="novaValM2Input">NOVA VALIDADE (após aberto):</label>
-                    <input type="date" id="novaValM2Input">
-                </div>
-            </div>
-
-            <!-- MODO DE CONSERVAÇÃO -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block; font-size:13px; color:#94a3b8; margin-bottom:8px;">CONSERVAÇÃO / MODO DE CONSERVAÇÃO:</label>
-                <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:14px;">
-                    <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
-                        <input type="radio" name="conservacao" value="ambiente" checked style="width:auto;">
-                        <span>Temp. Ambiente</span>
-                    </label>
-                    <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
-                        <input type="radio" name="conservacao" value="geladeira" style="width:auto;">
-                        <span>Geladeira</span>
-                    </label>
-                    <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
-                        <input type="radio" name="conservacao" value="freezer" style="width:auto;">
-                        <span>Freezer</span>
-                    </label>
-                    <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
-                        <input type="radio" name="conservacao" value="nenhum" style="width:auto;">
-                        <span>Deixar ( ) em branco p/ marcar</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- QUANTIDADE E NOME DO ARQUIVO -->
             <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;">
-                <div class="campo" style="max-width:130px;">
+                <div class="campo" style="max-width:140px;">
                     <label for="qtdInput">Quantidade</label>
                     <input type="number" id="qtdInput" value="1" min="1" step="1">
                 </div>
                 <div class="campo" style="flex:1; min-width:180px;">
                     <label for="nomeArqInput">Nome do arquivo (.zpl)</label>
-                    <input type="text" id="nomeArqInput" value="etiqueta_manipulacao">
+                    <input type="text" id="nomeArqInput" value="etiqueta_1">
                 </div>
             </div>
         </section>
 
-        <!-- PASSO 2: PRÉVIA E GERAÇÃO ZPL -->
+        <!-- PASSO 2: PRÉ-VISUALIZAÇÃO E GERAÇÃO DO ZPL -->
         <section class="card">
-            <h2>2. Prévia da etiqueta e geração do .ZPL</h2>
-            <p class="texto">Confira como o texto vai sair na etiqueta antes de enviar para a impressora Zebra.</p>
+            <h2>2. Pré-visualização da etiqueta (104 x 150 mm)</h2>
+            <p class="texto">Confira como a etiqueta selecionada vai sair antes de gerar o arquivo .ZPL.</p>
 
-            <div style="overflow-x:auto; border:1px dashed rgba(255,255,255,0.2); border-radius:10px; padding:10px; text-align:center;">
+            <div style="overflow-x:auto; border:1px dashed rgba(255,255,255,0.2); border-radius:10px; padding:12px; text-align:center;">
                 <canvas id="previewCanvas" style="display:block; max-width:100%; height:auto; margin:0 auto;"></canvas>
             </div>
 
@@ -161,21 +84,6 @@
 
         const btnModelo1 = document.getElementById('btnModelo1');
         const btnModelo2 = document.getElementById('btnModelo2');
-        const camposModelo1 = document.getElementById('camposModelo1');
-        const camposModelo2 = document.getElementById('camposModelo2');
-
-        const produtoInput = document.getElementById('produtoInput');
-        const responsavelInput = document.getElementById('responsavelInput');
-        const marcaInput = document.getElementById('marcaInput');
-        const loteInput = document.getElementById('loteInput');
-        const aberturaM1Input = document.getElementById('aberturaM1Input');
-        const valOriginalInput = document.getElementById('valOriginalInput');
-        const novaValM1Input = document.getElementById('novaValM1Input');
-
-        const aberturaM2Input = document.getElementById('aberturaM2Input');
-        const horaM2Input = document.getElementById('horaM2Input');
-        const novaValM2Input = document.getElementById('novaValM2Input');
-
         const qtdInput = document.getElementById('qtdInput');
         const nomeArqInput = document.getElementById('nomeArqInput');
         const gerarZplBtn = document.getElementById('gerarZplBtn');
@@ -189,29 +97,20 @@
                 .replace(/[^ -~]/g, '').replace(/[\^~\\]/g, '').trim();
         }
 
-        function formatarDataBR(iso) {
-            if (!iso) return '';
-            const [y, m, d] = iso.split('-');
-            return (d && m && y) ? `${d}/${m}/${y}` : '';
-        }
-
-        function getConservacao() {
-            const marcado = document.querySelector('input[name="conservacao"]:checked');
-            return marcado ? marcado.value : 'nenhum';
-        }
-
         function selecionarModelo(num) {
             modeloAtual = num;
             if (num === 1) {
                 btnModelo1.style.background = '#2563eb';
                 btnModelo2.style.background = '#374151';
-                camposModelo1.style.display = 'flex';
-                camposModelo2.style.display = 'none';
+                if (nomeArqInput.value === 'etiqueta_2') {
+                    nomeArqInput.value = 'etiqueta_1';
+                }
             } else {
                 btnModelo1.style.background = '#374151';
                 btnModelo2.style.background = '#2563eb';
-                camposModelo1.style.display = 'none';
-                camposModelo2.style.display = 'flex';
+                if (nomeArqInput.value === 'etiqueta_1') {
+                    nomeArqInput.value = 'etiqueta_2';
+                }
             }
             desenharPrevia();
         }
@@ -219,53 +118,35 @@
         btnModelo1.addEventListener('click', () => selecionarModelo(1));
         btnModelo2.addEventListener('click', () => selecionarModelo(2));
 
-        function montarLinhasModelo1() {
-            const prod = limparZpl(produtoInput.value) || '___________________________';
-            const marca = limparZpl(marcaInput.value) || '______________________';
-            const lote = limparZpl(loteInput.value) || '_______________________';
-            const cons = getConservacao();
-            const cAmb = cons === 'ambiente' ? '(X)' : '( )';
-            const cGel = cons === 'geladeira' ? '(X)' : '( )';
-            const cFrz = cons === 'freezer' ? '(X)' : '( )';
-            const dtAbr = formatarDataBR(aberturaM1Input.value) || '___/___/____';
-            const dtValOrig = formatarDataBR(valOriginalInput.value) || '___/___/____';
-            const dtNovaVal = formatarDataBR(novaValM1Input.value) || '___/___/____';
-            const resp = limparZpl(responsavelInput.value) || '________________________';
-
+        // SOMENTE a primeira etiqueta
+        function linhasEtiqueta1() {
             return [
                 '========================================',
-                `PRODUTO: ${prod}`,
-                `MARCA / FABRICANTE: ${marca}`,
-                `LOTE ORIGINAL: ${lote}`,
-                `MODO DE CONSERVACAO: ${cAmb} Temp. Ambiente ${cGel} Geladeira ${cFrz} Freezer`,
+                'PRODUTO: _______________________________',
+                'MARCA / FABRICANTE: ____________________',
+                'LOTE ORIGINAL: _________________________',
+                'MODO DE CONSERVACAO:',
+                '( ) Temp. Ambiente  ( ) Geladeira  ( ) Freezer',
                 '----------------------------------------',
-                `DATA DE ABERTURA / TRANSFERENCIA: ${dtAbr}`,
-                `VALIDADE ORIGINAL: ${dtValOrig}`,
-                `NOVA VALIDADE (apos aberto): ${dtNovaVal}`,
+                'DATA DE ABERTURA / TRANSFERENCIA: ___/___/___',
+                'VALIDADE ORIGINAL: ___/___/___',
+                'NOVA VALIDADE (apos aberto): ___/___/___',
                 '----------------------------------------',
-                `RESPONSAVEL: ${resp}`,
+                'RESPONSAVEL: ___________________________',
                 '========================================'
             ];
         }
 
-        function montarLinhasModelo2() {
-            const prod = limparZpl(produtoInput.value) || '___________________________';
-            const dtAbr = formatarDataBR(aberturaM2Input.value) || '___/___/20___';
-            const hora = limparZpl(horaM2Input.value) || '___:___';
-            const dtNovaVal = formatarDataBR(novaValM2Input.value) || '___/___/20___';
-            const cons = getConservacao();
-            const cAmb = cons === 'ambiente' ? '(X)' : '( )';
-            const cGel = cons === 'geladeira' ? '(X)' : '( )';
-            const cFrz = cons === 'freezer' ? '(X)' : '( )';
-            const resp = limparZpl(responsavelInput.value) || '________________________';
-
+        // SOMENTE a segunda etiqueta
+        function linhasEtiqueta2() {
             return [
                 '========================================',
-                `PRODUTO: ${prod}`,
-                `DATA DE ABERTURA: ${dtAbr}   ${hora}h`,
-                `NOVA VALIDADE (apos aberto): ${dtNovaVal}`,
-                `CONSERVACAO: ${cAmb} Temp. Ambiente ${cGel} Geladeira ${cFrz} Freezer`,
-                `RESPONSAVEL: ${resp}`,
+                'PRODUTO: _______________________________',
+                'DATA DE ABERTURA: ___/___/20___   ___:___h',
+                'NOVA VALIDADE (apos aberto): ___/___/20___',
+                'CONSERVACAO:',
+                '( ) Temp. Ambiente  ( ) Geladeira  ( ) Freezer',
+                'RESPONSAVEL: ___________________________',
                 '========================================'
             ];
         }
@@ -276,13 +157,13 @@
             ctx.strokeStyle = '#999';
             ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
 
-            const linhas = modeloAtual === 1 ? montarLinhasModelo1() : montarLinhasModelo2();
+            const linhas = modeloAtual === 1 ? linhasEtiqueta1() : linhasEtiqueta2();
             const margemX = 6 * PX_POR_MM;
             let yAtual = 8 * PX_POR_MM;
-            const espacoLinha = (modeloAtual === 1 ? 8.5 : 11) * PX_POR_MM;
+            const espacoLinha = (modeloAtual === 1 ? 8.2 : 11.5) * PX_POR_MM;
 
             ctx.fillStyle = '#111111';
-            ctx.font = `bold ${3.6 * PX_POR_MM}px monospace`;
+            ctx.font = `bold ${3.5 * PX_POR_MM}px monospace`;
             ctx.textBaseline = 'top';
 
             linhas.forEach(linha => {
@@ -291,19 +172,14 @@
             });
         }
 
-        document.querySelectorAll('input').forEach(el => {
-            el.addEventListener('input', desenharPrevia);
-            el.addEventListener('change', desenharPrevia);
-        });
-
         gerarZplBtn.addEventListener('click', () => {
             try {
-                const linhas = modeloAtual === 1 ? montarLinhasModelo1() : montarLinhasModelo2();
+                const linhas = modeloAtual === 1 ? linhasEtiqueta1() : linhasEtiqueta2();
                 const qt = Math.max(1, parseInt(qtdInput.value, 10) || 1);
                 const xDots = Math.round(6 * DOTS_POR_MM);
                 const yInicialDots = Math.round(8 * DOTS_POR_MM);
-                const passoDots = Math.round((modeloAtual === 1 ? 8.5 : 11) * DOTS_POR_MM);
-                const fonteDots = Math.round(3.6 * DOTS_POR_MM);
+                const passoDots = Math.round((modeloAtual === 1 ? 8.2 : 11.5) * DOTS_POR_MM);
+                const fonteDots = Math.round(3.5 * DOTS_POR_MM);
 
                 const zplComandos = [
                     '^XA',
@@ -320,7 +196,7 @@
                 zplComandos.push('^XZ');
 
                 const zplTexto = zplComandos.join('\n') + '\n';
-                const nomeLimpo = limparZpl(nomeArqInput.value).replace(/\s+/g, '_') || `etiqueta_modelo_${modeloAtual}`;
+                const nomeLimpo = limparZpl(nomeArqInput.value).replace(/\s+/g, '_') || `etiqueta_${modeloAtual}`;
 
                 const blob = new Blob([zplTexto], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
@@ -333,7 +209,7 @@
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
 
                 statusEl.style.color = '#4ade80';
-                statusEl.textContent = `Pronto! Modelo ${modeloAtual} gerado em ${nomeLimpo}.zpl (${qt} cópia(s)). Envie direto para a Zebra.`;
+                statusEl.textContent = `Pronto! Etiqueta ${modeloAtual} gerada em ${nomeLimpo}.zpl (${qt} cópia(s), 104x150 mm). Envie direto para a Zebra.`;
             } catch (err) {
                 statusEl.style.color = '#f87171';
                 statusEl.textContent = 'Erro ao gerar ZPL: ' + err.message;
